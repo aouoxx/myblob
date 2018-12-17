@@ -437,11 +437,9 @@ yarn-site.xml的配置文件
 </configuration>
 ```
 
-
-
 ### _yarn的介绍_
 
-
+![yarn](E:\note_workspace\myblob\mypic\yarn.png)
 
 #### _yarn的构成_
 
@@ -475,8 +473,6 @@ Client: 一个提交给ResourceManager的一个Application程序
 
 
 
-
-
 #### _yarn的执行流程_
 
 ```
@@ -496,8 +492,6 @@ yarn的执行流程
 maptask执行完毕后,相应的资源会被回收,那之后启动的reduce是如何获取maptask生成的数据.
 maptask虽然不存在了,但是有文件,它们被nodemanager管理,reduce可以找nodemanager要,我们在搭建环境时配置过一个参数mapreduced_shuffle就是配合管理这些文件
 ```
-
-
 
 ### _hadoop编码_
 
@@ -621,7 +615,8 @@ mapreduce的运行原理
 #### _mapreduce的相关介绍_
 
 ```java
-	进行mapreduce计算的时候，输出一般是一个文件夹,而且该文件夹是不能被覆盖的, 文件夹不能被覆盖在MR程序对应的job提交的时候就进行了校验,mapreduce之所以这样设计主要是保证数据可靠性,因为如果输出目录存在,reduce就搞不清楚到底是要追加还是覆盖,不管是追加和覆盖操作都有可能导致最终结果出问题，mapreduce是做海量数据计算,一个生产计算的成本很高,一个job有可能需要几个小时,因此一切影响错误的情况mapreduce是零容忍的
+	进行mapreduce计算的时候，输出一般是一个文件夹,而且该文件夹是不能被覆盖的, 文件夹不能被覆盖在MR程序对应的job提交的时候就进行了校验,mapreduce之所以这样设计主要是保证数据可靠性,因为如果输出目录存在,reduce就搞不清楚到底是要追加还是覆盖,不管是追加和覆盖操作都有可能导致最终结果出问题，mapreduce是做海量数据计算,一个生产计算的成本很高,一个job有可能需要几个小时,因此一切影响错误的情况mapreduce是零容忍的.
+	mapreduce还有一个inputFormat和outputFormat,在编写map函数时候发现map方法的参数文件行数据,没有牵涉到InputFormat,因为这些事情在new Path()的时候mapreduce计算框架已经做好了,而OutputFormat也是reduce做好了,我们使用什么样的输入文件,就要调用什么样的InputFormat,InputFormat是和我们输入的文件类型相关的,mapreduce中常用的InputFormat有FileInputFormat普通文本文件,SequenceFileInputFormat是指hadoop序列化文件,另外还有KeyValueTextInputFormat.OutputFormat是我们最终存储到hdfs系统上的文件格式，这个可以根据我们的需要进行定义，hadoop支持很多文件格式
 	
 ```
 
