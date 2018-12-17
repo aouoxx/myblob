@@ -382,6 +382,18 @@ yarn.scheduler.maximum-allocation-vcores的默认值为1
 #### _mapred-site.xml_
 
 ```xml
+<configuration>
+	<property>
+    	<name>mapreduce.framework.name</name>
+        <value>yarn</value>
+        <!-- 指定mr运行在yarn上 -->
+    </property>
+</configuration>
+```
+
+
+
+```xml
 mapreduce.job.name 作业名称
 mapreduce.job.priority 作业优先级
 mapreduce.job.queuename 作业提交到的队列
