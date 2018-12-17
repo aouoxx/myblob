@@ -331,6 +331,23 @@ dfs.blocksize
 #### _yarn-site.xml_
 
 ```xml
+<configuration>
+	<property>
+    	<name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+        <!--reduce 获取数据的方式 -->
+    </property>
+    <property>
+    	<name>yarn.resourcemanager.hostname</name>
+        <value>master.ssgao</value>
+        <!-- 指定yarn的ResourceManager的地址-->
+    </property>
+</configuration>
+```
+
+
+
+```xml
 yarn.scheduler.minimum-allocation-mb (默认:1024)
 yarn.scheduler.maximum-allocation-mb (默认：8192)
 	说明:单个容器可申请的最小与最大内存,应用在运行申请内存时不能超过最大值,小于最小值。这两个值一经设定不能动态改变(即: 不能在应用程序运行时改变)
@@ -606,8 +623,7 @@ public class MyWritable implements Writable{
 #### _mapreduce的运行原理_
 
 ```xml
-mapreduce的运行原理
-	首先客户端编写好mapreduce程序,配置好mapreduce的作业也就是job，接下来就是提交job了,提交job是提交到
+
 ```
 
 

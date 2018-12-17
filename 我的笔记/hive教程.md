@@ -180,3 +180,102 @@ map,string,struct类型数据解析
       where e.deptno=d.no;
 ```
 
+
+
+### _hive数据导入_
+
+```sql
+> 使用load执行数据导入
+  load data [local] inpath 'filepath' [overwrite] into table tableName 
+  [patition (partcol1=val1,partcol2=val2..)]
+  -----------------------------------------------------------------------------
+     [local]: 表示从操作系统的目录进行导入，如果不写local表示从HDFS数据目录进行数据导入
+      inpath: 表示导入的路径'filepath'文件存在的目录
+ [overwrite]: 是否覆盖表中存在的数据
+ [partition]: 如果表是分区表,通过partition来指明分区,(partcol1=val1,partcol2=val2..)为分区的条件
+ 
+hive> load data inpath '/root/inner_table.dat' into table t1;
+      移动hdfs中数据到t1表中      
+hive> load data local inpath '/root/inner_table.dat' into table t1;
+      上传本地数据到hdfs中      
+hive> !ls 查询当前linux文件夹下的文件
+hive> dfs -ls / 查询当前hdfs文件系统下'/'目录下的文件
+```
+
+
+
+
+
+### _hive表创建_
+
+
+
+### _hive表操作_
+
+```sql
+Hive 创建表加上对字段的描述信息
+	create table table_name (column1 int comment '第一列',...); //comment表示字段描述
+	create table test_table(id bigint comment '序号',name string comment '姓名');
+> 查看表信息
+	desc person;
+> 查看表分区
+	show partitions t1; (查看表有哪些分区)
+> 删除表信息
+	drop table t1;
+	drop table t1 if exits t1;
+> 新增字段(新增列信息)
+    添加列 alter table t1 add columns(english,int);
+	alter table tablename add columns (列名 类型 [comment '注释']); --comment 部分可选
+	alter table table_test add columns (data string);
+	alter table table_test add columns (
+    	order_source string comment '订单来源',
+        bank_name string comment '银行行名'
+    );
+> alter table table_name [partition] add|replace columns(col_name data_type comment xx) [cascade|restricts]
+	ddl语句最后添加cascade,否则新增的列在旧的分区中不可见,查询数据时为null,重新刷新数据仍为null
+
+> 修改hive表字段注释
+	alter hive 表名 change 列名 新的列名 新的列名类型 comment '列注释'
+> 修改hive表名
+	alter table table_name rename to new_table_name;
+> 修改hive表字段名
+	alter table 表名 change 旧字段 新字段 类型;	
+
+```
+#### _hive insert_
+
+
+```sql
+insert into overwrite local directory '/home/hadoop/ssgao/test_demo.txt'
+ row format delimited
+ fields terminated by '\t'
+ select * from test;
+
+insert into 和 insert overwrite的区别
+> insert into 语句
+	insert into table account select id,age,name form account_tmp;
+> insert overwrite 语句
+	insert overwrite table account2 select id,age,name from account_tmp;
+> 两者的区别,insert overwrite会覆盖已经存在的数据,先将原始表的数据remove,如果存在分区的情况下,insert overwrite 会只重写当前分区数据, insert into只是简单的插入,不考虑原始表数据,直接追加到表中,最后表中的数据是原始数据和新插入的数据。
+
+insert into ... select
+> insert into table2(字段1,字段2) select 字段1,字段2 from table1;
+> insert into table2(字段1,字段2) partition=xx select 字段1,字段2 from table1 where partition=xx (插入指定的分区)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
