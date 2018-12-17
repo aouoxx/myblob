@@ -54,6 +54,18 @@ Your identification has been saved in id_rsa_github.
 Your public key has been saved in id_rsa_github.pub.
 The key fingerprint is:
 SHA256:JzFmQLDAe1s0AsZRK8QTA9k/hX3hrCgFE6g88RU1jSE aouo1987@163.com
+	3) 配置~/.ssh/config文件
+	   如果没有就在~/.ssh目录创建config文件,该文件用于配置私钥对应的服务器
+$ cat config
+Host g.hz.netease.com
+        HostName g.hz.netease.com
+        PreferredAuthentications publickey
+        IdentityFile ~/.ssh/id_rsa
+Host github.com
+        HostName github.com
+        PreferredAuthentications publickey
+        IdentityFile ~/.ssh/id_rsa_github
+
 
 ```
 
