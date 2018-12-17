@@ -258,11 +258,64 @@ try{
 #### _core-site.xml_
 
 ```xml
-fs.defaultFS(老版本为fs.defaule.name)
-    默认使用的文件系统类型(hdfs://host:port/)
+修改core-site.xml 配置内容如下:
+    <configuration>
+       // 指定HDFS老大(namenode)的通信地址
+     <property>
+       <name> fs.defaultFS </name>
+       <value> hdfs://192.168.1.100:9000 </value>
+       <description> 192.168.1.100为服务器IP地址,其实也可以使用主机名 </description>
+     </property>
+     <property>
+         <name> io.file.buffer.size </name>
+         <value> 131072</value>
+         <description>该属性值单位为KB,131072即为默认的64M</description>
+     </property>
+   </configuration>
+
+打开回收站的配置
+   删除文件时,其实时放入回收站
+   回收站里面的文件可以快速恢复
+   可以设置一个时间阈值,当回收站里面存放的文件超过这个阈值,就被彻底删除,并且释放占用的数据块
+   <property>
+       <name>fs.frash.interval</name>
+       <value>10080</value> // 保存的时间
+       <description>启用回收站的功能,重启集群 </description>
+	</property>
 ```
 
 #### _hdfs-site.xml_
+
+```xml
+配置nameNode
+ <configuration>
+     /** 分片数量,伪分布式将其配置为1即可*/
+     <property>
+         <name> dfs.replication </name>
+         <value> 1</value>
+     </property>
+     /** 命名空间和事物在本地文件系统永久存储的路径*/
+     <property>
+         <name> dfs.namenode.name.dir</name>
+         <value> file:/usr/local/hadoop/tmp/namenode</value>
+     </property>
+     /** datanode1,datanode2分别对应DataNode所在服务器主机名*/
+     <property>
+         <name>dfs.namenode.hosts</name>
+         <value>datanode1,datanode2</value>
+     </property>
+     /** 大文件系统HDFS块大小为256M,默认值为64M*/
+     <property>
+         <name>dfs.blocksize</name>
+         <value>268435456</value>
+     </property>
+     /** 更过的NameNode服务器线程处理来自DataNode的RPCS*/
+     <property>
+         <name>dfs.namenode.handler.count</name>
+         <value>100</value>
+     </property>
+ </configuration>
+```
 
 ```xml
 dfs.namenode.name.dir
@@ -327,9 +380,68 @@ mapreduce.reduce.java.opts
 	说明: 这两个参数主要是为需要运行JVM程序(java,scala等)准备的,通过这两个设置可以向JVM中传递参数，-Xmx,-Xms等。此数值大小,应该在AM中的map.mb和reduce.mb之间。
 ```
 
+```xml
+	hadoop2以上版本中,map和reduce task是运行在container中的。mapreduece.{map|reduce}.memeory.mb 被yarn用来设置container的内存大小.如果container的内存超限,会被yarn杀死，在container中,为了执行map和reduce task，yarn会在container中启动一个jvm来执行task任务. mapreduce.{map|reduce}.java.opts用来设置container启动的jvm相关参数,通过设置XMx来设置map或reduce task的最大内存。
+    理论上,{map|reduce}.java.opts设置的最大堆内存要比{map|reduce}.memory.mb小,一般设置为0.75倍的memory.mb即可。因为yarn container这种模式下,JVM进程跑在container中,需要为java code等非JVM的内存使用预留一些空间。
+运行中的设置方法例如: xml中也可以设置 hadoop jar -Dmapreduce.reduce.memory.mb=4096 -Dmapreduce.map.java.opts=-Xmx3276
+```
+
+
+
+#### _配置案例分析_
+
+##### _虚拟内存不足_
+
+```xml
+Container [pid=17879,containerID=container_1544560864880_0001_02_000001] is running beyond virtual memory limits. Current usage: 88.1 MB of 256 MB physical memory used; 2.8 GB of 1 GB virtual memory used. Killing container.
+yarn-site.xml的配置文件
+<configuration>
+        ...
+        <property>
+                <name>yarn.scheduler.minimum-allocation-mb</name>
+                <value>256</value>
+                <description>container可以申请的最小内存</description>
+        </property>
+        <property>
+                <name>yarn.scheduler.maximum-allocation-mb</name>
+                <value>1024</value>
+                <description>container可以申请的最大内存</description>
+        </property>
+        <property>
+                <name>mapreduce.map.memory.mb</name>
+                <value>128</value>
+                <description>map任务申请的内存</description>
+        </property>
+        <property>
+                <name>mapreduce.reduce.memory.mb</name>
+                <value>128</value>
+                <description>reduce任务申请的内存</description>
+        </property>
+        <property>
+                <name>yarn.nodemanager.resource.memory-mb</name>
+                <value>1500</value>
+                <description>每个节点可用的最大内存</description>
+        </property>
+        <property>
+                <name>yarn.nodemanager.vmem-pmem-ratio</name>
+                <value>4</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.resource.cpu-vcores</name>
+                <value>1</value>
+        </property>
+        <property>
+                <name>yarn.app.mapreduce.am.resource.mb</name>
+                <value>200</value>
+        </property>
+</configuration>
+```
+
 
 
 ### _yarn的介绍_
+
+
 
 #### _yarn的构成_
 
@@ -492,6 +604,52 @@ public class MyWritable implements Writable{
 }
 
 ```
+
+
+
+### _MapReduce的使用_
+
+#### _mapreduce的运行原理_
+
+```xml
+mapreduce的运行原理
+	首先客户端编写好mapreduce程序,配置好mapreduce的作业也就是job，接下来就是提交job了,提交job是提交到
+```
+
+
+
+#### _mapreduce的相关介绍_
+
+```java
+	进行mapreduce计算的时候，输出一般是一个文件夹,而且该文件夹是不能被覆盖的, 文件夹不能被覆盖在MR程序对应的job提交的时候就进行了校验,mapreduce之所以这样设计主要是保证数据可靠性,因为如果输出目录存在,reduce就搞不清楚到底是要追加还是覆盖,不管是追加和覆盖操作都有可能导致最终结果出问题，mapreduce是做海量数据计算,一个生产计算的成本很高,一个job有可能需要几个小时,因此一切影响错误的情况mapreduce是零容忍的
+	
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
