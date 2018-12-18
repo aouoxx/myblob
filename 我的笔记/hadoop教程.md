@@ -742,7 +742,29 @@ maptask执行完毕后,相应的资源会被回收,那之后启动的reduce是�
 maptask虽然不存在了,但是有文件,它们被nodemanager管理,reduce可以找nodemanager要,我们在搭建环境时配置过一个参数mapreduced_shuffle就是配合管理这些文件
 ```
 
-### _hadoop编码_
+#### _yarn的调度流程_
+
+```java
+1 client端会调用resourceManager,申请执行一个job
+2 resourceManager会给客户端返回一个hdfs目录以及一个application_id号
+3 client端会将切片信息,job的配置信息以及jar包上传到上一步收到的hdfs目录下(三个文件分别是job.split,job.xml,jar包)
+4 client请求resourceManager启动mrappmaster
+5 resourcemanager将client请求初始化成一个task任务,放到执行队列里面(默认FIFO),当执行到这个task的时候会给该job分配资源
+6 resourcemanager会找空闲的nodemanager创建一个container容器,并启动mrappmaster
+7 当mrappmaster启动之后会先将client提交到hdfs的资源(job.split,job.xml,jar包)下载到本地
+8 mrappmaster根据资源信息的情况请求resourcemanager启动maptask
+9 resourcemanager会为上面的请求找空闲的nodemanager并且启动相应的maptask程序监控maptask的运行情况(如果maptask挂掉之后,由mrappmaster去处理)
+10 当maptask执行完成后,mrappmaster又会向resourcemanager申请reducetask的资源
+11 resourcemanager有会为上面的请求找空闲的nodemanager并创建reducetask的container
+12 mrappmaster然后又启动reducetask任务,并且监控reducetask任务的执行状态
+13 直到mapreduce的程序执行完成
+
+当mrappmaster挂掉之后,resourcemanager会重新找其他的nodemanager并重新启动一个mrappmaster,所以mrappmaster存在单点故障问题
+```
+
+
+
+### hadoop编码_
 
 #### _hadoop的基本类型_
 
