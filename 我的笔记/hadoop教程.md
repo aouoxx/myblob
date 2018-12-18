@@ -25,6 +25,20 @@ Hbase
     hbase使用于实时计算,采用列式结构的nosql,操作的是自己生成的特使格式的File,被hadoop管理的数据文件,它的定位是数据库或者叫DBMS
 ```
 
+#### _hadoop目录结构分析_
+
+```java
+bin hadoop最基本的管理脚本和使用脚本所在目录,这些脚本是sbin目录下管理脚本的基础实现,用户可以直接使用这些脚本管理和使用hadoop
+etc hadoop配置文件所在的目录,包括core-site.xml hdfs-site.xml mapred-site.xml 等从hadoop1.0继承来的配置文件和yarn-site.xml等hadoop2.0新增的配置文件
+include 对外提供编程库头文件(具体动态库和静态库在lib目录中),这些头文件均是C++定义的,通常用于C++程序访问HDFS或者编写mapreduce
+lib 该目录包含了hadoop对外提供的编程动态库和静态库与include目录中头文件结合使用
+libexec 各个服务对应的shell配置文件所在的目录,可用于配置日志输出目录,启动参数(比如jvm参数)等基本信息
+sbin hadoop管理脚本所在目录,主要包含HDFS和yarn中各类服务的启动和关闭脚本
+share hadoop各个模块编译后的jar包所在的目录
+```
+
+
+
 
 
 ### _hadoop的操作命令_
@@ -44,6 +58,43 @@ hadoop trace 跟踪
 
 
 ### _hdfs介绍_
+
+#### _hdfs文件系统_
+
+```xml
+hdfs 文件系统
+	是一个高度容错的系统,能够检查和应对硬件故障,用于在低成本的通用硬件上运行.HDFS简化了文件的一致性模型,通过流式数据访问,提供高吞吐量应用程序数据访问功能,适合带有大量数据集的应用程序.
+NameNode
+	管理数据节点和文件块的映射关系,处理客户端对数据的读写请求.
+	NameNode保存了两个核心的数据结构,FsImage和EditLog.FsImage用于维护文件系统树以及元数据;EditLog记录了文件的操作,NameNode不持久化Block与DataNode的映射信息,而是在系统每次启动的时候扫描所有DataNode来重构这些信息.
+DatNode
+	负责数据的存储和读取,向NameNode定期发送自己的存储块信息.周期性地向NameNode发送心跳信息报告自己的状态.
+HDFS集群中只有一个NameNode，负责所有元数据的管理,有若干DataNode,每个DataNode运行在一个独立节点上.
+SecondaryNameNode
+	对NameNode进行备份,周期性地从NameNode下载EditLog(操作日志)和FsImage(镜像文件),将EditLog和FsImage合并得到FsImage.ckpt,将合并后的FsImage.ckpt上传到NameNode,更新NameNode的EditLog与FsImage
+	
+```
+
+##### _hdfs关于block的大小_
+
+```xml
+1）HDFS默认文件块Block大小为64MB,hadoop2.0后修改为128MB, 如果一个文件小于block,则它并不占整个Block空间
+2）Block不宜过大,MR的map任务一次只能处理一个Block数据,Block数据过大会是启动的Maps数量过少,影响并行处理速度
+3）HDFS 无法高效存储大量小文件
+	检索效率, hdfs中的NameNode的元数据保存在内存中，过多的小文件需要大量内存空间,降低数据检索效率
+	寻址开销, 访问大量小文件,需要不断从一个DataNode调到另一个DataNode，寻址开销增大
+	线程开销，MapReduce处理大量小文件时会产生过多的Map任务,线程管理开销会大大增加
+```
+
+
+
+#### _hdfs同步机制_
+
+```java
+
+```
+
+
 
 #### _hdfs文件操作命令_
 
@@ -121,6 +172,11 @@ hadoop hdfs系统的一些常用命令
         显示当前目录或者文件夹的大小可加选项 -s
      >>> dus 显示文件大小
          hadoop fs -dus <args>
+[root@master sbin]# hadoop dfs -du -s -h /tmp/  --显示目录的大小
+DEPRECATED: Use of this script to execute hdfs command is deprecated.
+Instead use the hdfs command for it.
+2.9 M  /tmp
+         
   12) touchz 创建空文件
      >> 使用方法 hadoop fs -touchz URI [URI ...]
         创建一个0字节的空文件
@@ -141,13 +197,18 @@ hadoop hdfs系统的一些常用命令
    *) 清空回收站
       hadoop fs -expunge
 
+> 查看文件系统可以使用的空间
+[root@master hadoop-2.7.4]# hadoop fs -df -h /
+Filesystem                  Size   Used  Available  Use%
+hdfs://master.ssgao:9000  44.8 G  3.2 M     40.1 G    0%
+
+> 上传,下载,查看文件信息
 [root@master ~]# hadoop fs -put /root/log.log hdfs://master.ssgao:9000/root
 [root@master ~]# hadoop fs -cat hdfs://master.ssgao:9000/root
 eth0      Link encap:Ethernet  HWaddr 00:0C:29:47:3F:D4  
 [root@master ~]# hadoop fs -ls /
 Found 1 items
 -rw-r--r--   1 root supergroup        911 2018-12-07 02:00 /root
-
 [root@master ~]# hadoop fs -get /root log.log
 [root@master ~]# hadoop fs -get hdfs://master.ssgao:9000/root log1.log
 ```
@@ -251,6 +312,151 @@ try{
 }
 ```
 
+##### _configuration_
+
+```java
+public class Configuration extends Object implements Iterable<Map.Entry<String,String>>,Writable{
+    // 提供配置参数,如果没有具体指明,hadoop从core-site.xml中获取配置信息
+    public Configuration(){}
+    public Configuration(Configuration conf){}
+    //是否从默认文件core-site.xml中读取配置信息
+    public Configuration(Boolean loadDefaults){} 
+    
+    //set与get 根据属性名获取值,属性不存在时返回null
+    public String get(String name){}；
+    public String get(String name,String defaultValue){}；
+    public void set(String name,String value){}；
+	
+    //迭代遍历
+    public Iterator<Map.Entry<String,String>> iterator(){}
+}
+
+```
+
+##### _FileSystem_
+
+```java
+public abstract class FileSystem extends Configured implements Closeable {
+	//通用文件系统的抽象基类
+    //工厂模式，获取实例
+    public static FileSystem get(Configuration conf) throws IOException {}
+    // 这里的user的含义
+    public static FileSystem get(URI uri, Configuration conf, String user) throws IOException
+    public static FileSystem get(URI uri, Configuration conf) throws IOException {}
+    public static LocalFileSystem getLocal(Configuration conf) throws IOException {}
+    public static FileSystem newInstance(URI uri, Configuration conf) throws IOException
+ 
+    //创建输出/输入流对象
+    public FSDataOutputStream create(Path f, boolean overwrite, int bufferSize) throws IOException
+    public FSDataInputStream open(Path f) throws IOException
+    public FSDataOutputStream append(Path f, int bufferSize) throws IOException
+    public void concat(Path trg, Path[] psrcs) throws IOException{} //Concat existing files together
+ 
+    //文件移动
+    public void moveFromLocalFile(Path src, Path dst) throws IOException{} //从本地向HDFS移动文件
+    public void moveToLocalFile(Path src, Path dst) throws IOException{} //从HDFS向本地移动文件
+    //从本地向HDFS复制文件
+    public void copyFromLocalFile(boolean delSrc, boolean overwrite, Path src, Path dst) throws IOException{} 
+    //从HDFS向本地复制文件
+    public void copyToLocalFile(boolean delSrc, Path src, Path dst) throws IOException{} 
+    //在本地磁盘间或HDFS之间移动文件，即重命名
+    public abstract boolean rename(Path src, Path dst) throws IOException{} 
+ 
+    //判断方法
+    public boolean exists(Path f) throws IOException{} //判断文件或目录是否存在
+    public boolean isDirectory(Path f) throws IOException{}
+    public boolean isFile(Path f) throws IOException{}
+    //创建目录
+    public boolean mkdirs(Path f) throws IOException{}
+    //删除文件或目录
+    public abstract boolean delete(Path f, boolean recursive) throws IOException
+    //获取文件统计信息
+    public FsStatus getStatus(Path p) throws IOException
+    public FileStatus[] listStatus(Path f, PathFilter filter) throws FileNotFoundException, IOException
+    //关闭
+    public void close() throws IOException{}
+}
+```
+
+##### _FileStatus_
+
+```java
+public class FileStatus{
+    //构造方法
+    public FileStatus(){}
+    //判断方法
+    public boolean isFile(){};
+    public boolean isDirectory(){};
+    //get方法
+    public long getLen(){};
+    public long getBlockSize(){};
+    public short getReplication(){};
+    public String getOwner(){};
+    public Path getPath(){};
+    //set方法
+    public void setPath(Path p){};
+    protected void setOwner(String owner){};
+}
+```
+
+##### _FSDataInputStream_
+
+```java
+
+public class FSDataInputStream extends DataInputStream implements...{
+    //构造方法
+    public FSDataInputStream(InputStream in) {}
+ 
+    //读指针相关方法
+    public void seek(long desired) throws IOException{}
+    public long getPos() throws IOException{}
+ 
+    //读操作
+    public int read(long position, byte[] buffer, int offset, int length) throws IOException
+    public void readFully(long position, byte[] buffer, int offset, int length) throws IOException
+    /*read(byte[] b)方法实质是读取流上的字节直到流上没有字节为止，如果当声明的字节数组长度大于流上的数据长度时就提前返回，而readFully(byte[] b)方法是读取流上指定长度的字节数组，也就是说如果声明了长度为len的字节数组，readFully(byte[] b)方法只有读取len长度个字节的时候才返回，否则阻塞等待，如果超时，则会抛出异常 EOFException*/
+}
+```
+
+##### _FSDataOutputStream_
+
+```java
+public class FSDataOutputStream extends DataOutputStream implements...{
+//写方法全部继承自父类
+}
+```
+
+##### _path_
+
+```java
+public class Path extends Object implements Comparable {
+    //构造方法
+    public Path(String parent, String child){}
+    public Path(URI uri){}
+    //合并路径
+    public static Path mergePaths(Path path1, Path path2) {}
+    public URI toUri(){};
+    //get方法
+    public FileSystem getFileSystem(Configuration conf) throws IOException {}
+    //该方法可获取fs对象，在输出路径存在的情况下删除输出路径
+    public String getName(){} //Returns the final component of this path
+    public Path getParent(){} //Returns the parent of a path or null if at root
+    //判断方法
+    public boolean isAbsolute(){};
+    public boolean isRoot(){};
+}
+```
+
+##### _URI_
+
+```java
+public final class URI extends Object implements Comparable<URI>, Serializable {
+    //构造方法
+    public URI(String str) {};
+    public URI(String scheme, String host, String path, String fragment) {};
+}
+```
+
 
 
 ###  _hadoop配置文件_
@@ -259,7 +465,7 @@ try{
 
 ```xml
 修改core-site.xml 配置内容如下:
-    <configuration>
+   <configuration>
        // 指定HDFS老大(namenode)的通信地址
      <property>
        <name> fs.defaultFS </name>
@@ -365,7 +571,7 @@ yarn.nodemanager.vmem-pmem-ratio (默认: 2.1)
 
 ```xml
 内存的配置
-yarn.nodemanager.resource.memory-mb默认值为-1
+yarn.nodemanager.resource.memory.mb默认值为-1
 	表示yarn的nodemanager占总内存的80%。也就是说加入yarn的机器内存为64G,除去非yarn进程需要20%内存,我们nodemanager的内存大概有64*0.8~51G.
     例如: 64GB的机器内存,我们有51G的内存可以用于NodeManager分配,直接将yarn.nodemanager.resource.memory-mb值设置48G(一般container容器的最小内存设置4GB,最大设置为16G)这样当前的NodeManager节点下,我们最多可以有12个container,最少可以有3个container
 
@@ -468,7 +674,7 @@ yarn-site.xml的配置文件
 
 ### _yarn的介绍_
 
-![yarn](E:\note_workspace\myblob\mypic\yarn.png)
+
 
 #### _yarn的构成_
 
@@ -498,6 +704,20 @@ Client: 一个提交给ResourceManager的一个Application程序
     将得到的任务进一步分配给内部的任务
     与NM通信以启动/停止任务
     监控所有任务运行状态,并在任务运行失败时重新为任务申请资源以重启任务
+```
+
+
+
+
+
+##### _container_
+
+```xml
+container 是yarn中资源的抽象,它封装了某个节点上一定量的资源(CPU和内存两类资源)
+container 由applicationMaster向资源所在的NodeManager发起的,Container运行时需要提供内部执行的任务命令(可以是任何命令,比如java,python，c++进程启动命令均可)以及该命令执行所需的环境变量和外部资源(比如词典文件,可执行文件,jar包等)
+一个应用程序所需的container分为两大类
+	1) 运行ApplicationMaster的container,这是由ResourceManager(向内部的资源调度器)申请和启动的,用户提交应用程序时,可指定唯一的ApplicationMaster获取所需的资源
+	2) 运行各类任务的Container
 ```
 
 
@@ -640,6 +860,19 @@ public class MyWritable implements Writable{
 
 
 
+```xml
+Map端
+	1) 每个输入分片会让一个map任务来处理,默认情况下,以HDFS的一个块大小(默认128M)为一个分片,当然我们也可以设置块的大小.map输出的结果会暂且放在一个环形内存缓存区中(该缓存区的大小默认为100M,由io.sort.mb属性控制),当该缓冲区快要溢出时(默认为缓冲区大小的80%,有io.sort.spill.percent属性控制),会在本地文件系统中创建一个溢出文件,将该缓冲区中的数据写入这个文件.
+	2) 在写入磁盘之前,线程首先根据reduce任务的数量将数据划分为相同数据的分区,也就是一个reduce任务对应一个分区的数据.这样做为了避免有些reduce任务分配到大量的数据,而有些reduce任务却分到很少的数据,甚至没有分到数据导致的数据不平衡。(其实分区就是对数据进行hash的过程),然后对每个分区中的数据进行排序,如果此时设置了Combiner,将排序后的结果进行Combiner操作,这样做的目的是让尽可能少的数据写入磁盘。
+	3) 当map任务输出最后一个记录时,可能会有很多溢出文件,这时需要将这些文件合并。合并的过程中会不断的进行排序和combiner操作,目的有两个: 
+		*> 尽量减少每次写入磁盘的数据量
+		*> 尽量减少下一复制节点网络传输的数据量
+最后合并成一个已分区且已排序的文件,为了减少网络传输的数据量,这里可以将数据压缩,只要将mapred.compress.map.out设置为true就可以了
+	4) 将分区中的数据拷贝给相对应的reduce任务,有人可能会问,
+```
+
+
+
 #### _mapreduce的相关介绍_
 
 ```java
@@ -651,6 +884,110 @@ public class MyWritable implements Writable{
 
 
 
+
+#### _mapreduce的执行步骤_
+
+```
+MapReduce分布式计算框架
+基本流程：
+    1) 大数据经split划分成大小相等的数据块(数据块的大小一般等于HDFS一个块的大小)以及用户作业程序
+    2) 系统中一个负责调度的Master节点和许多的map工作节点,Reduce工作节点
+    3) 用户作业程序提交给Mater节点,Mater节点寻找适合的Map节点,并将数据传给Map节点,并且Master也寻找合适的Reduce节点并将数据传给Reduce节点
+    4) Mater节点启动Map节点执行程序,Map节点尽可能得读取本地和本机架上的数据进行计算(数据本地化是MapReduce的核心特征)
+    5) 每个Map节点处理读取的数据块,并做一些数据整理,将中间结果放在本地而非HDFS中,同时通知Master节点Map工作完成,并告知中间结果的存储位置
+```
+
+```
+mapreduce在运行的过程中大致概括为5个步骤
+  input阶段  获取输入数据进行分片作为map的输入
+    map阶段  过程对某种输入格式的一条记录解析成一条或多条记录
+ shffle阶段  对中间数据的控制,作为reduce的输入
+ reduce阶段  对相同key的数据进行合并
+ output阶段  按照格式输出到指定目录
+ 
+ 
+ input阶段
+     input阶段主要从节点上反序列化数据,读取后切片,供map阶段使用序列化格式和inputformat格式可以自定义设置
+     只有支持分片的压缩格式可以分片,记录格式: 如serse用正则表达式来转换文本hive
+     1) 访问datanode中的数据反序列化数据并进行切片,为每一个切片分配一个map任务
+     2) 并发执行这些任务
+     3) 通过recordReader读取切片中的每一条记录按照记录格式读取,偏移值作为map的key,记录行作为value,当做map方法的参数 
+ 
+ map阶段
+     1) 通过对输入记录的处理,转换成一个或多个中间记录
+     
+shuffle阶段
+     1) shuffle阶段会对中间值进行优化,并且将分区的数据分发给各个reduce处理
+         a) map 任务的输出默认是放在本地磁盘的临时缓冲目录中的
+         b) 分区,排期,combiner过程可自定义
+         c) 由于受限于集群可用宽带,通常会对中间数据做压缩,combiner处理,减少网络宽带消耗
+         d) 分区的作用就是决定根据map输出的key值由哪个reduce处理
+         e) mapper实现类读取配置文件属性,可以在配置中指定压缩的格式
+         f) 每一个分组的后台线程对输出结果的key进行排期,在排期过程中有combine函数则会进行调用        
+         
+reduce阶段
+    处理<key,list<value>>对,对每个key产生一个结果
+ 
+output阶段
+    对输出数据通常会做压缩,节省磁盘空间
+    将reduce结果按照输出的格式写入文件中
+    1) 按照输出文件的格式,将每个键值对结果输出一行,中间分隔符默认是'\t',默认调用键值对对象的toString()方法
+```
+
+
+
+##### _分区Patitioner_
+
+```java
+Partition分区和Reduce Tasks数量
+ Map的结果,会通过partition函数分发到Reduce上。它的作用就是根据key或value以及reduce的数量来决定当前这对输出数据最终交由哪个
+ reduce task处理.默认的HashPartitioner
+ public class HashPartitioner<K,V> extends Partitioner<K,V>{
+     public int getPartition(K key,V value, int numReduceTasks){
+         return (key.hashCode()&Integer.MAX_VALUE)%numReduceTasks;
+     }
+ }
+ 即: key运算结果相同的被分到同一组,那个key到那个reducer的分配过程,是由Partitioner规定的 输入是Map的结果对<key,value>和
+     reducer的数目,输出则是分配的Reducer(整数编号).
+     就是指定Mapper输出的键值对到哪一个reducer上去
+ 
+ 总结: 分区Partitioner主要作用在于以下两点
+ 1) 根据业务需要,产生多个输出文件
+ 2) 多个reduce任务并发运行,提高整体job的运行效率
+     job.setPartitionerClass(AreaParitioner.class);
+     job.setNumReduceTasks(3);
+ *) 当分组有6个
+     如果reduceTask任务有10个,只有6个输出文件有数据,其他为空文件;
+     如果reduceTask任务为5个则报错,因为有分组找不到reduce函数
+```
+
+
+
+##### _分组Group_
+
+
+
+
+
+##### _初步合并Combiner_
+
+
+
+##### _shuffle_
+
+```java
+shuffle机制
+    shuffle描述数据从map task输出到reduce task输入的这段过程.(包括分组,排序规约和缓存机制)
+split切片的概念
+    1) map的数量不是由block块数量决定,而是由split切片数量决定
+    2) 切片是一个逻辑概念,指的是文件中数据得偏移量范围
+    3) 切片的具体大小应该根据所处理的文件大小来调整
+    4) 最佳的分片大小应该与块大小相同, 因为如果跨越了两个数据块,节点一般不会同时存储这两个块,因而会造成网络传输,降低效率
+    5) 数据本地化 
+            a) 避免了调用同一个机架中空闲机器运行该map任务 
+            b) 其他机架来处理(小概率),浪费集群宽带资源
+            
+```
 
 
 
