@@ -57,6 +57,33 @@ hadoop trace 跟踪
 
 
 
+### _hadoop的安装_
+
+
+
+#### _hadoop的单机版安装_
+
+```java
+配置core-site.xml
+
+配置hdfs-site.xml
+
+
+hadoop数据文件格式化
+	hadoop namenode -format
+	格式化完毕,这种格式化hdfs的方式是需要把原来的hdfs中数据全部清空,然后在格式化并安装一个全新的hdfs
+启动hdfs的命令
+	切换到sbin目录下 ./start-dfs.sh
+
+配置yarn-site.xml
+
+	
+```
+
+
+
+
+
 ### _hdfs介绍_
 
 #### _hdfs文件系统_
@@ -461,6 +488,24 @@ public final class URI extends Object implements Comparable<URI>, Serializable {
 
 ###  _hadoop配置文件_
 
+#### _默认的配置文件_
+
+```xml
+hadoop 配置文件分为两类,默认的配置文件和自定义配置文件,只有用户想修改某一默认配置值时,才需要修改自定义配置文件,更改相应的属性值
+	默认的配置文件,存放在hadoop相应的jar包
+	hadoop-common-2.7.3.jar/core-default.xml
+	hadoop-hdfs-2.7.3.jar/hdfs-default.xml
+	hadoop-yarn-common-2.7.3.jar/yarn-default.xml
+	hadoop-mapreduce-client-core-2.7.3.jar/mapred-defaule.xml
+自定义配置文件
+	自定义配置文件存放在 $HADOOP_HOME/etc/hadoop
+	
+```
+
+
+
+
+
 #### _core-site.xml_
 
 ```xml
@@ -764,7 +809,7 @@ maptask虽然不存在了,但是有文件,它们被nodemanager管理,reduce可�
 
 
 
-### hadoop编码_
+### _hadoop编码_
 
 #### _hadoop的基本类型_
 
