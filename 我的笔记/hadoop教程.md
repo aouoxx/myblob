@@ -131,6 +131,8 @@ SecondaryNameNode
 
 ##### _hdfs读取过程_
 
+![1545223943595](E:\note_workspace\myblob\mypic\1545223943595.png)
+
 ```java
 1) 客户端通过调用FileSystem对象的open()来读取希望打开的文件.对于HDFS来说，这个对象时分布式文件系统的一个实例
 2) DistributedFileSystem通过RPC来调用namenode，以确定文件的开头部分的块位置.对于每一个块,namenode返回具有该副本的datanode地址,此外,这些datanode根据它们与client的距离来排序(根据网络集群的拓扑)。如果该client本身就是一个datanode,便从本地datanode中读取。
@@ -149,6 +151,8 @@ SecondaryNameNode
 
 ##### _hdfs写入过程_
 
+![1545223997625](E:\note_workspace\myblob\mypic\1545223997625.png)
+
 ```java
 1） 客户端通过在DistributedFileSystem中调用create()来创建文件
 2） DistributeFileSystem使用RPC去调用namenode，在文件系统的命名空间创建一个新的文件,没有块与之相关联
@@ -157,8 +161,18 @@ SecondaryNameNode
     分布式文件系统返回一个文件系统数据输出流,让client开始写入数据.就像读取事件一样,文件系统数据输出流控制一	个DFSOutputStream,负责处理datanode和namenode之间的通信
 3） 在client写入数据时,DFSOutputStream将它分成一个个的包,写入内部的队列,成为数据队列。
 	数据队列随着数据流流动,数据流的责任是根据合适的datanode的列表要求这些节点为副本分配新的块。
-	
-4）
+	这个数据节点得列表形成一个管线-- 假设副本是3,所以有三个节点在管线中
+4） 数据流将包分流给管线中第一个的datanode, 这个节点会存储存储包并且发送给管线中的第二个datanode。
+	同样地,第二个datanode存储包并且传给管线中的第三个数据节点。
+5)  DFSOutputStream 也有一个内部包队列来等待datanode收到确认，成为确认队列,一个包只有被管线中的所有节点确	    认后才会被移除确认队列。如果在有数据写入期间,datanode发生故障,则会执行下面的操作,当然这对写入数据的		client来说是透明的。
+首先管线被关闭,确认队列中的任何包都会被添加回数据队列的前面,确保故障节点下游的datanode不会漏掉任意一个包。为存储在另一个正常datanode的当前数据块制定一个新的标识,并将标识传给namenode，以便故障节点datanode在恢复后可以删除存储的部分数据块。
+从管线中删除故障数据节点并且把余下的数据块写入管线中的两个正常的datanode。namenode注意到块副本量不足时,会在另一个节点上创建一个新的副本。后续的数据块继续正常接收处理,主要dfs.replication.min的副本(默认是1)被写入,写操作就是成功的,并且这个块会在集群中被异步复制,直到其满足目标副本数(dfs.replication默认值为3)
+6） client 完成数据的写入后,就会在流中调用close()
+7） 在向namenode节点发送完消息之前,此方法会将余下的所有包放入datanode管线并等待确认
+    namenode节点已经知道文件由哪些块组成(通过Data streamer询问块分配),所以它只需要在返回成功前等待块最小量的复制
+ 
+副本的布局
+	hadoop的默认布局策略是在运行客户端的节点上放第一个副本(如果客户端运行在集群之外,就随机选择一个节点,不过系统会避免挑选那些存储太慢或太忙的节点) 第二个副本放在与第一个副本不同且随机另外选择的机架节点上(离架)。第三个副本与第二个副本放在相同的机架,且随机选择另一个节点。其他副本放在集群中随机的节点上,不过系统会尽量避免相同的机架防止太多的副本。
 ```
 
 
