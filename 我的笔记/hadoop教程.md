@@ -653,12 +653,31 @@ dfs.blocksize
         <value>master.ssgao</value>
         <!-- 指定yarn的ResourceManager的地址-->
     </property>
+     <property>
+         <name>yarn.resourcemanager.address</name>
+         <value>master.ssgao:8032</value>
+         <!-- 客户端对ResourceManager主机通过host:port提交作业-->
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.address</name>
+        <value>master.ssgao:8030</value>
+        <!-- ApplicationMaster 通过ResourceManager主机访问host：port跟踪调度程序获取资源-->
+    </property>
+        <property>
+                <name>yarn.resourcemanager.resource-tracker.address</name>
+                <value>master.ssgao:8031</value>
+        </property>
+
 </configuration>
 ```
 
 
 
 ```xml
+
+
+
+
 yarn.scheduler.minimum-allocation-mb (默认:1024)
 yarn.scheduler.maximum-allocation-mb (默认：8192)
 	说明:单个容器可申请的最小与最大内存,应用在运行申请内存时不能超过最大值,小于最小值。这两个值一经设定不能动态改变(即: 不能在应用程序运行时改变)
