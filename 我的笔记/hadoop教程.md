@@ -94,11 +94,15 @@ hdfs 文件系统
 NameNode
 	管理数据节点和文件块的映射关系,处理客户端对数据的读写请求.
 	NameNode保存了两个核心的数据结构,FsImage和EditLog.FsImage用于维护文件系统树以及元数据;EditLog记录了文件的操作,NameNode不持久化Block与DataNode的映射信息,而是在系统每次启动的时候扫描所有DataNode来重构这些信息.
+	Namenode内存中存储的是= fsimage+edits
+
 DatNode
 	负责数据的存储和读取,向NameNode定期发送自己的存储块信息.周期性地向NameNode发送心跳信息报告自己的状态.
 HDFS集群中只有一个NameNode，负责所有元数据的管理,有若干DataNode,每个DataNode运行在一个独立节点上.
 SecondaryNameNode
 	对NameNode进行备份,周期性地从NameNode下载EditLog(操作日志)和FsImage(镜像文件),将EditLog和FsImage合并得到FsImage.ckpt,将合并后的FsImage.ckpt上传到NameNode,更新NameNode的EditLog与FsImage
+	SecondaryNameNode负责定时默认1小时,从namenode上,获取fsimage和edits来进行合并,然后在发送给namenode,减少namenode的工作量。
+
 	
 ```
 
@@ -120,6 +124,48 @@ SecondaryNameNode
 ```java
 
 ```
+
+
+
+#### _hdfs文件的读取和写入_
+
+##### _hdfs读取过程_
+
+```java
+1) 客户端通过调用FileSystem对象的open()来读取希望打开的文件.对于HDFS来说，这个对象时分布式文件系统的一个实例
+2) DistributedFileSystem通过RPC来调用namenode，以确定文件的开头部分的块位置.对于每一个块,namenode返回具有该副本的datanode地址,此外,这些datanode根据它们与client的距离来排序(根据网络集群的拓扑)。如果该client本身就是一个datanode,便从本地datanode中读取。
+	DistributedFileSystem返回一个FSDataInputStream对象给client读取数据,FSDataInputStream转而包装了一个DFSInputStream对象。
+3) 接着client对这个输入流调用read().存储着文件开头部分的块数据节点的地址DFSInputStream随即与这些最近的datanode相连接
+4) 通过在数据流中反复调用read()，数据会从datanode返回client
+5）到达块的末端时,DFSInputStream会关闭与datanode间的联系,然后为下一个块找到最佳的datanode.
+    client端只需要读取一个连续的流,这些对于client来说是透明的.
+6) 在读取的时候,如果client与datanode通信时遇到一个错误,那么它就会去尝试对这个块来说最近的下一个块。
+	它也会记那个故障节点的datanode，以保证不会再对之后的块进行徒劳无益的尝试.
+    client 也会确认datanode发来的数据校验和,如果发现一个损坏的块,它就会在client试图从别的datanode中读取一个块的副本之前报告给namenode
+7)  真个设计的一个重点是,client直接联系datanode去检索数据,并被namenode指引到块中最好的datanode。
+	因为数据流在此集群中是所有datanode分散进行的。
+	所以这种设计能使HDFS可扩展到最大的并发client数量,同时namenode只不过提供块的位置请求(存储在内存中,十分高效),不是提供数据.否则如果客户端数量增长,namenode就可能成为一个"瓶颈"
+```
+
+##### _hdfs写入过程_
+
+```java
+1） 客户端通过在DistributedFileSystem中调用create()来创建文件
+2） DistributeFileSystem使用RPC去调用namenode，在文件系统的命名空间创建一个新的文件,没有块与之相关联
+	namenode执行各种不同的检查(这个文件是否存在,有没有权限去写,能不能存的下这个文件)以确保这个文件不会已经	 存在,并且client有可以创建文件的适当许可。
+	如果检查通过,namenode就会生成一个新的文件记录;否则,文件创建失败并向client抛出一个IOException异常.
+    分布式文件系统返回一个文件系统数据输出流,让client开始写入数据.就像读取事件一样,文件系统数据输出流控制一	个DFSOutputStream,负责处理datanode和namenode之间的通信
+3） 在client写入数据时,DFSOutputStream将它分成一个个的包,写入内部的队列,成为数据队列。
+	数据队列随着数据流流动,数据流的责任是根据合适的datanode的列表要求这些节点为副本分配新的块。
+	
+4）
+```
+
+
+
+
+
+
 
 
 
