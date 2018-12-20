@@ -1,0 +1,7 @@
+[TOC]
+---
+
+##### _adx数据统计的维度和指标_
+```
+  time,requuid,mediaId,mediaName,urs,murs,idfa,open_uuid,imei,android_id,
+```

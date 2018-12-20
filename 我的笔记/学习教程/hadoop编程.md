@@ -6,11 +6,14 @@
 
 ```java
 maptask并行度决定map阶段任务处理并发度,进而影响整个job的处理速度
-	一个job的map阶段并行度由客户端在提交job时决定的,客户端对map阶段并行度的规划的基本逻辑为:
-将待处理数据执行逻辑切片(即按照一个特定切片大小,将待处理数据划分成逻辑上的多个split)，然后每一个split分配一个maptask,并行实例处理。
+	一个job的map阶段并行度由客户端在提交job时决定的,客户端对map阶段并行度的规划的
+基本逻辑为:
+将待处理数据执行逻辑切片(即按照一个特定切片大小,将待处理数据划分成逻辑上的多
+个split)，然后每一个split分配一个maptask,并行实例处理。
 ```
 
 #### _FileInputFormat切片机制_
+
 
 ```java
 1) 切片定义在InputFormat类中getSplit()方法
@@ -23,12 +26,21 @@ maptask并行度决定map阶段任务处理并发度,进而影响整个job的处
 		file2.txt 10M
 	经过FileInputFormat切片机制运算后,形成的切片信息:
 		file1.txt.split1 -- 0~128m
-		file1.txt.split2 -- 128~256M
+		file1.txt.split2 -- 128~256M<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
+
+		- [_maptask并行度_](#maptask并行度)
+			- [_FileInputFormat切片机制_](#fileinputformat切片机制)
+			- [_map并行度经验_](#map并行度经验)
+		- [_reducetask并行度_](#reducetask并行度)
+		- [_mapreduce的方法组成_](#mapreduce的方法组成)
+
 		file1.txt.split3 -- 256~320M
 3) FileInputFormat中切片的大小参数配置
 	在FileInputFormat中,计算切片大小的逻辑,Math.max(minSize,Math.min(maxSize,blockSize));切片主要由下面几个值来运算决定:
-	minsize:默认值 1  配置参数：mapreduce.input.fileinputformat.split.minsize
-	maxsize:默认值Long.Maxvalue 配置参数：mapreduce.input.fileinputformat.split.maxsize
+	minsize:默认值 1  
+  配置参数：mapreduce.input.fileinputformat.split.minsize
+	maxsize:默认值Long.Maxvalue
+  配置参数：mapreduce.input.fileinputformat.split.maxsize
 	blocksize 默认情况下,切片大小=blocksize
 	maxsize(切片的最大值)参数如果调得比blocksize小,则会让切片变小,而且就等于配置的这个参数值
 	minsize(切片的最小值)参数如果调的比blocksize大,则会让切片变的比blocksize还大
@@ -56,9 +68,9 @@ maptask并行度决定map阶段任务处理并发度,进而影响整个job的处
 	reducetask的并行度同样影响整个job的执行并发度和执行效率,但与maptask的并发数有切片数决定不同,reducetask的数量可以手动设置。
 	job.setNumReduceTasks(4); //默认值是1,手动设置为4
 	如果数据分布不均匀,就可能在reduce节点产生数据倾斜。
-ps: 
+ps:
 	reducetask数量并不是任意设置,还要考虑业务逻辑需求,有些情况下,需要计算全局汇总结果,就只能有1个reducetask.
-    
+
 ```
 
 
@@ -74,44 +86,3 @@ setup() 此方法被MapReduce框架仅且执行一次,在执行Map任务前,进�
 cleanup() 此方法被MapReduce框架,仅且执行一次,在执行完毕Map任务后,进行相关变量或资源的释放工作.若是将释放资源工作放入方法map()中,也会导致Mapper任务在解析,处理每一行文本后释放资源,而且在下一行文本解析前还要重复初始化,导致反复重复,程序运行效率不高
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
