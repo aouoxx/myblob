@@ -13,9 +13,37 @@
 ```xml
 vmware克隆虚拟机,修改修改网卡
 	vi /etc/udev/rules.d/70-presistent-net.rules;
+	# PCI device 0x8086:0x100f (e1000)
+	SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="00:0c:29:00:0a:69", 		ATTR{type}=="1", KERNEL=="eth*", NAME="eth0"
+	[root@slavea ~]# 
 
 修改设置克隆机器的eth0的静态ip
-
+	[root@slavea ~]# cat /etc/sysconfig/network-scripts/ifcfg-eth0 
+    DEVICE=eth0
+    HWADDR=00:0c:29:00:0a:69 ---(这个地址注意修改 和上面ATTR{address}一致)
+    TYPE=Ethernet
+    UUID=35e364f9-403c-4929-bbc3-0db3d31a763d
+    ONBOOT=yes
+    NM_CONTROLLED=yes
+    BOOTPROTO=static
+    IPADDR=192.168.0.120
+    NETMASK=255.255.255.0
+    GATEWAY=192.168.0.1
+修改虚拟机的hostname
+	 linux查看主机名
+		[root@master ~]# hostname
+		master.ssgao
+	 修改network文件
+		[root@master ~]# vim /etc/sysconfig/network
+		NETWORKING=yes
+		HOSTNAME=slave.ssgao
+	 修改hosts文件
+		[root@master ~]# vim /etc/hosts
+		127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+		::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+		192.168.0.108 master.ssgao
+		192.168.0.120 slavea.ssgao
+	 reboot重启机器生效
 ```
 
 

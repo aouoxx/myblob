@@ -151,7 +151,7 @@ SecondaryNameNode
 
 ##### _hdfs写入过程_
 
-![1545223997625](E:\note_workspace\myblob\mypic\1545223997625.png)
+![1545223997625](\myblob\mypic\1545223997625.png)
 
 ```java
 1） 客户端通过在DistributedFileSystem中调用create()来创建文件
