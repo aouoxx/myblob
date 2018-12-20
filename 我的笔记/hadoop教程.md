@@ -565,6 +565,16 @@ hadoop 配置文件分为两类,默认的配置文件和自定义配置文件,�
 	
 ```
 
+#### _默认的访问端口_
+
+```xml
+NameNode的端口     http://host:port/  默认端口号50070
+ResourceManager   http://host:port/  默认端口号8088
+MapReduceJobHistoryServer http://host:port/ 默认端口号19888
+```
+
+
+
 
 
 
@@ -677,9 +687,19 @@ dfs.blocksize
 
 
 ```xml
-
-
-
+yarn.resourcemanager.address 
+	客户端对ResourceManager主机通过host:port提交作业
+yarn.resourcemanager.scheduler.address
+	ApplicationMasters通过ResourceManager主机访问host:port跟踪调度程序获取资源
+yarn.resourcemanager.resource-tracker.address
+	NodeManager通过resoureManager主机访问host:port
+yarn.resourcemanager.admin.address
+	管理命令通过ResourceManager主机访问host:port
+yarn.resourcemanager.webapp.address
+	ResourceManager web页面host:port
+yarn.resourcemanager.scheduler.class
+	ResourceManager调度类(Scheduler class)
+	CapacityScheduler(推荐),FairScheduler(也推荐)FifoScheduler
 
 yarn.scheduler.minimum-allocation-mb (默认:1024)
 yarn.scheduler.maximum-allocation-mb (默认：8192)
@@ -687,9 +707,17 @@ yarn.scheduler.maximum-allocation-mb (默认：8192)
 yarn.scheduler.minimum-allocation-vcore
 yarn.scheduler.maximum-allocation-vcore
 	说明:单个可申请的最小，最大虚拟CPU个数。比如设置为1和4,则运行MapReduce作业时,每个task最少可申请1个虚拟CPU,最多可申请4个虚拟CPU
+
+
+--配置nodemanager
 yarn.nodemanager.resource.memory-mb (默认：8G)
 yarn.nodemanager.vmem-pmem-ratio (默认: 2.1)
 	说明:每个节点可用的最大内存,RM中的两个值不应该超过此值。此数值可用于计算container最大数目,即此用此值除以RM中的最小容器内存.虚拟内存率是占task所有内存的百分比,默认值为2.1倍;注意第一个参数是不可以修改的,一旦设置,整个运行过程中不可以动态修改,且该值的默认大小是8G,即使计算机内存不足8G也会按照8G内存来使用
+
+yarn.nodemanager.local-dirs
+	数据写入本地文件系统路径的列表用逗号分隔,多条存储路径可以提高磁盘的读写速度
+yarn.nodemanager.log-dirs
+	本地文件系统日志路径的列表,逗号分隔
 
 
 ```
@@ -719,7 +747,7 @@ yarn.scheduler.maximum-allocation-vcores的默认值为1
 	<property>
     	<name>mapreduce.framework.name</name>
         <value>yarn</value>
-        <!-- 指定mr运行在yarn上 -->
+        <!-- 指定mr运行在yarn上，执行框架设置为Hadoop yarn -->
     </property>
 </configuration>
 ```
@@ -730,6 +758,7 @@ yarn.scheduler.maximum-allocation-vcores的默认值为1
 mapreduce.job.name 作业名称
 mapreduce.job.priority 作业优先级
 mapreduce.job.queuename 作业提交到的队列
+
 mapreduce.map.cpu.vcores
 mapreduce.reduce.cpu.vcores
 	说明: 给Map/reduce的task需要的虚拟cpu的个数
@@ -737,7 +766,7 @@ AM 内存配置相关参数,此处以MapReduce为例进行说明,这两个值都
 mapreduce.map.memory.mb
 mapreduce.reduce.memory.mb
 	说明: 这两个参数指定用于mapreduce的两个任务(Map和Reduce task)的内存大小,其值应该在RM中的最大,最小container之间,一般reduce应该是map的2倍。这两个值可以在应用启动的时候通过参数改变。
-mapreduce.map.java.opts
+mapreduce.map.java.opts (属性值 -Xmx2014M)
 mapreduce.reduce.java.opts
 	说明: 这两个参数主要是为需要运行JVM程序(java,scala等)准备的,通过这两个设置可以向JVM中传递参数，-Xmx,-Xms等。此数值大小,应该在AM中的map.mb和reduce.mb之间。
 ```
