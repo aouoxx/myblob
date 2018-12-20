@@ -91,6 +91,7 @@ hadoop数据文件格式化
 ```xml
 hdfs 文件系统
 	是一个高度容错的系统,能够检查和应对硬件故障,用于在低成本的通用硬件上运行.HDFS简化了文件的一致性模型,通过流式数据访问,提供高吞吐量应用程序数据访问功能,适合带有大量数据集的应用程序.
+
 NameNode
 	管理数据节点和文件块的映射关系,处理客户端对数据的读写请求.
 	NameNode保存了两个核心的数据结构,FsImage和EditLog.FsImage用于维护文件系统树以及元数据;EditLog记录了文件的操作,NameNode不持久化Block与DataNode的映射信息,而是在系统每次启动的时候扫描所有DataNode来重构这些信息.
@@ -99,6 +100,7 @@ NameNode
 DatNode
 	负责数据的存储和读取,向NameNode定期发送自己的存储块信息.周期性地向NameNode发送心跳信息报告自己的状态.
 HDFS集群中只有一个NameNode，负责所有元数据的管理,有若干DataNode,每个DataNode运行在一个独立节点上.
+
 SecondaryNameNode
 	对NameNode进行备份,周期性地从NameNode下载EditLog(操作日志)和FsImage(镜像文件),将EditLog和FsImage合并得到FsImage.ckpt,将合并后的FsImage.ckpt上传到NameNode,更新NameNode的EditLog与FsImage
 	SecondaryNameNode负责定时默认1小时,从namenode上,获取fsimage和edits来进行合并,然后在发送给namenode,减少namenode的工作量。
@@ -110,6 +112,7 @@ SecondaryNameNode
 
 ```xml
 1）HDFS默认文件块Block大小为64MB,hadoop2.0后修改为128MB, 如果一个文件小于block,则它并不占整个Block空间
+   块的大小可以通过配置参数(dfs.blocksize来规定)
 2）Block不宜过大,MR的map任务一次只能处理一个Block数据,Block数据过大会是启动的Maps数量过少,影响并行处理速度
 3）HDFS 无法高效存储大量小文件
 	检索效率, hdfs中的NameNode的元数据保存在内存中，过多的小文件需要大量内存空间,降低数据检索效率
