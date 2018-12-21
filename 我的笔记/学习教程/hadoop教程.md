@@ -201,11 +201,12 @@ hadoop hdfs系统的一些常用命令
     drwxr-xr-x   - root supergroup          0 2018-12-08 01:45 /mydata
     -rw-r--r--   1 root supergroup        911 2018-12-07 02:00 /root
     [root@master ~]# 
-    [root@master ~]# hadoop fs -ls -R  /
+    [root@master ~]# hadoop fs -ls -R  /    --递归查看对应的文件目录
     drwxr-xr-x   - root supergroup          0 2018-12-08 01:45 /mydata
     -rw-r--r--   1 root supergroup        911 2018-12-07 20:03 /mydata/log.log
     -rw-r--r--   1 root supergroup        911 2018-12-08 01:45 /mydata/log.txt
     -rw-r--r--   1 root supergroup        911 2018-12-07 02:00 /root
+    
     [root@master ~]# 
     [root@master ~]# hadoop fs -ls -R  /mydata
     -rw-r--r--   1 root supergroup        911 2018-12-07 20:03 /mydata/log.log
