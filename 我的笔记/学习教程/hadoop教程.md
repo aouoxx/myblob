@@ -847,9 +847,18 @@ Containers
 ApplicationMaster
     ResourceManager将任务给ApplicationMaster，然后ApplicationMaster再将任务给NodeManager。每个Application只有一个ApplicationMaster,运行在NodeManager节点,ApplicationMaster是由ResourceManager指派的
 job: 需要执行的一个工作单元,包括输入数据,MapReduce程序和配置信息.job可以叫做Application
-task: 一个具体做Mapper或reducer的独立的工作单元.ta
+task: 一个具体做Mapper或reducer的独立的工作单元.
 
 ```
+
+##### _resourcemanager_
+
+```java
+ResourceManager负责整个集群的资源管理和分配,是一个全局的资源管理系统
+NodeManager 以心跳的
+```
+
+
 
 ##### _ApplicationMaster_
 
