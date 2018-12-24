@@ -850,8 +850,6 @@ ResourceManager负责整个集群的资源管理和分配,是一个全局的资�
 NodeManager 以心跳
 ```
 
-
-
 ##### _ApplicationMaster_
 
 ```
@@ -864,10 +862,6 @@ Client: 一个提交给ResourceManager的一个Application程序
     监控所有任务运行状态,并在任务运行失败时重新为任务申请资源以重启任务
 ```
 
-
-
-
-
 ##### _container_
 
 ```xml
@@ -877,8 +871,6 @@ container 由applicationMaster向资源所在的NodeManager发起的,Container�
 	1) 运行ApplicationMaster的container,这是由ResourceManager(向内部的资源调度器)申请和启动的,用户提交应用程序时,可指定唯一的ApplicationMaster获取所需的资源
 	2) 运行各类任务的Container
 ```
-
-
 
 #### _yarn的执行流程_
 

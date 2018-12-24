@@ -2,6 +2,7 @@
 
 ----
 
+<a id="markdown-markdown-header-_hive的概述_" name="markdown-header-_hive的概述_"></a>
 ### _hive的概述_
 
 **_hive是构建在HDFS上的数据仓库_**
@@ -21,6 +22,7 @@
 
 
 
+<a id="markdown-markdown-header-_数据类型_" name="markdown-header-_数据类型_"></a>
 ### _数据类型_
 
 ```sql
@@ -75,6 +77,7 @@ map,string,struct类型数据解析
 
 
 
+<a id="markdown-markdown-header-_hive的数据存储_" name="markdown-header-_hive的数据存储_"></a>
 ### _hive的数据存储_
 
 ```xml
@@ -116,6 +119,7 @@ map,string,struct类型数据解析
   --------------------------------------------------
 ```
 
+<a id="markdown-markdown-header-_hive分区表_" name="markdown-header-_hive分区表_"></a>
 #### _hive分区表_
 
 ```sql
@@ -133,7 +137,6 @@ map,string,struct类型数据解析
    select sid,sname,from sample_data where gender='M';
 
 ```
-
 ####  _hive外部表_
 
 ```sql
@@ -149,7 +152,6 @@ map,string,struct类型数据解析
     row format delimited fields terminated by ','
     location '/input';
 ```
-
 #### _hive桶表_
 
 ```sql
@@ -160,8 +162,6 @@ map,string,struct类型数据解析
   (sid int, sname string, age int)
   clustered by (sname) into 5 buckets;  //对sname进行哈希运算, 创建5个桶表
 ```
-
-
 
 #### _hive视图_
 
@@ -183,6 +183,7 @@ map,string,struct类型数据解析
 
 
 
+<a id="markdown-markdown-header-_hive数据导入_" name="markdown-header-_hive数据导入_"></a>
 ### _hive数据导入_
 
 ```sql
@@ -202,16 +203,6 @@ hive> load data local inpath '/root/inner_table.dat' into table t1;
 hive> !ls 查询当前linux文件夹下的文件
 hive> dfs -ls / 查询当前hdfs文件系统下'/'目录下的文件
 ```
-
-
-
-
-
-### _hive表创建_
-
-
-
-### _hive表操作_
 
 ```sql
 Hive 创建表加上对字段的描述信息
@@ -243,6 +234,7 @@ Hive 创建表加上对字段的描述信息
 	alter table 表名 change 旧字段 新字段 类型;
 
 ```
+<a id="markdown-markdown-header-_hive-insert_" name="markdown-header-_hive-insert_"></a>
 #### _hive insert_
 
 
