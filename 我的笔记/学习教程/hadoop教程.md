@@ -124,17 +124,11 @@ SecondaryNameNode
 
 #### _hdfs同步机制_
 
-```java
-
-```
-
-
-
 #### _hdfs文件的读取和写入_
 
 ##### _hdfs读取过程_
 
-![1545223943595](E:\note_workspace\myblob\mypic\1545223943595.png)
+![1545223943595](../../mypic/1545223943595.png)
 
 ```java
 1) 客户端通过调用FileSystem对象的open()来读取希望打开的文件.对于HDFS来说，这个对象时分布式文件系统的一个实例
@@ -154,7 +148,7 @@ SecondaryNameNode
 
 ##### _hdfs写入过程_
 
-![1545223997625](\myblob\mypic\1545223997625.png)
+![1545223997625](../../mypic/1545223997625.png)
 
 ```java
 1） 客户端通过在DistributedFileSystem中调用create()来创建文件

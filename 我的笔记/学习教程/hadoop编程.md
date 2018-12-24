@@ -2,6 +2,223 @@
 
 ---
 
+
+
+### _hdfs的编程_
+
+
+
+#### _hdfs的编程_
+
+```java
+
+    @Test
+    public void getClient02(){
+        Configuration configuration = new Configuration();
+        try {
+           // 获取hdfs的客户端
+           FileSystem fileSystem =
+                   FileSystem.get(new URI("hdfs://192.168.0.108:9000"),configuration,"root");
+            // 创建一个目录
+           fileSystem.mkdirs(new Path("/ssgao_b"));
+           // 关闭资源
+           fileSystem.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } 
+    }
+    public FileSystem getFileSystem(){
+        Configuration configuration = new Configuration();
+        try {
+            // 获取hdfs的客户端
+            FileSystem fileSystem =
+                    FileSystem.get(new URI("hdfs://192.168.0.108:9000"),configuration,"root");
+            return fileSystem;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } 
+        return null;
+    }
+    /**
+     * 释放资源
+     * @param fileSystem
+     */
+    public void releaseResource(FileSystem fileSystem){
+        if(fileSystem!=null){
+            try {
+                fileSystem.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    @Test
+    public void putFile(){
+        // 获取hdfs的客户端
+        FileSystem fileSystem = getFileSystem();
+        // 上传文件
+        try {
+            fileSystem.copyFromLocalFile(new Path("/Users/ssgao/Downloads/14_wordcount案例.avi"),new Path("/ssgao_a/avi.avi"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //关闭资源
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void getFile(){
+        FileSystem fileSystem = getFileSystem();
+        try {
+            /**
+             * delSrc 是否删除源文件
+             * 源文件路径
+             * 目标路径
+             * 是否使用原始本地文件系统,是否开启文本校验
+             */
+            fileSystem.copyToLocalFile(false,new Path("/ssgao_a/avi.avi"),new Path("/Users/ssgao/Downloads/test_test.avi"),false);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void delFile(){
+        FileSystem fileSystem = getFileSystem();
+        try {
+            // 删除文件路径，参数二 是否递归删除,即递归删除文件夹的数据
+            fileSystem.delete(new Path("/ssgao_b"),false);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void renameFile(){
+        FileSystem fileSystem = getFileSystem();
+        try {
+            // 修改文件名称
+            fileSystem.rename(new Path("/ssgao_a/avi.avi"),new Path("/ssgao_a/avi666.avi"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void lsPath() throws IOException {
+        FileSystem fileSystem = getFileSystem();
+        // 查询文件夹路径下的所有文件
+        RemoteIterator<LocatedFileStatus> files = fileSystem.listFiles(new Path("/ssgao_a"),true);
+        // 迭代输出信息
+        while (files.hasNext()){
+            LocatedFileStatus fileStatus =  files.next();
+            System.out.println(fileStatus.getBlockSize());
+            System.out.println(fileStatus.getPath().getName());
+            Arrays.asList(fileStatus.getBlockLocations()).forEach(location-> {
+                String[] arrs = new String[0];
+                try {
+                    arrs = location.getNames();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println(JSON.toJSONString(arrs));
+            });
+        }
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void testFile(){
+        FileSystem fileSystem = getFileSystem();
+        // 文件和文件夹的判断
+        try {
+            FileStatus[] fileStatuses = fileSystem.listStatus(new Path("/ssgao_a"));
+            Arrays.asList(fileStatuses).forEach(fileStatus -> {
+                if(fileStatus.isDirectory()){
+                    System.out.println("目录: "+fileStatus.getPath().getName());
+                }else{
+                    System.out.println("文件: "+fileStatus.getPath().getName());
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void testWrite() throws Exception {
+        FileSystem fileSystem = getFileSystem();
+        // 获取输入流信息
+        FileInputStream fileInputStream = new FileInputStream("/Users/ssgao/Downloads/15_hdfs的wordcount案例.avi");
+        // 获取输出流信息, 使用create()方法
+        FSDataOutputStream outputStream = fileSystem.create(new Path("/ssgao_c/15_test.avi"));
+        // 流的拷贝, 操作完成后会关闭输入和输出流信息
+        IOUtils.copyBytes(fileInputStream,outputStream,4096);
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void testRead() throws Exception {
+        FileSystem fileSystem = getFileSystem();
+        // 获取输入流信息
+        FSDataInputStream inputStream =  fileSystem.open(new Path("/ssgao_c/15_test.avi"));
+        // 获取输出流信息
+        FileOutputStream fileOutputStream = new FileOutputStream("/Users/ssgao/Downloads/15_15.avi");
+        // 流的拷贝,操作完成后会关闭输入和输出流信息
+        IOUtils.copyBytes(inputStream,fileOutputStream,4096);
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void getBlockFile() throws Exception {
+        FileSystem fileSystem = getFileSystem();
+        // 获取输入流
+        FSDataInputStream inputStream =  fileSystem.open(new Path("/ssgao_c/15_test.avi"));
+        // 获取输出流
+        FileOutputStream outputStream = new FileOutputStream("/Users/ssgao/Downloads/15_15.avi.part01");
+        // 流的拷贝
+        byte[] buf = new byte[1024];
+        for(int i=0;i<1024*128;i++){
+            inputStream.read(buf);
+            outputStream.write(buf);
+        }
+        // 关闭资源
+        IOUtils.closeStream(inputStream);
+        IOUtils.closeStream(outputStream);
+        releaseResource(fileSystem);
+    }
+
+    @Test
+    public void getBlockNFile() throws Exception {
+        FileSystem fileSystem = getFileSystem();
+        // 获取输入流
+        FSDataInputStream inputStream =  fileSystem.open(new Path("/ssgao_c/15_test.avi"));
+        // 获取输出流
+        FileOutputStream outputStream = new FileOutputStream("/Users/ssgao/Downloads/15_15.avi.part01");
+        // 流的拷贝,跳过第一块的内容
+        inputStream.seek(1024*1024*128);
+        IOUtils.copyBytes(inputStream,outputStream,4096);
+        // 关闭资源
+        IOUtils.closeStream(inputStream);
+        IOUtils.closeStream(outputStream);
+        releaseResource(fileSystem);
+    }
+```
+
+
+
+
+
+
+
+
+
 ### _maptask并行度_
 
 ```java
