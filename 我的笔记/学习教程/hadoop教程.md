@@ -43,7 +43,7 @@ share hadoop各个模块编译后的jar包所在的目录
 
 ### _hadoop的操作命令_
 
-```she
+```shell
 hadoop version   查看版本
 hadoop fs  文件系统客户端
 hadoop jar 运行jar包
@@ -55,7 +55,7 @@ hadoop trace 跟踪
 
 ```
 
-
+ 
 
 ### _hadoop的安装_
 
@@ -104,8 +104,6 @@ HDFS集群中只有一个NameNode，负责所有元数据的管理,有若干Data
 SecondaryNameNode
 	对NameNode进行备份,周期性地从NameNode下载EditLog(操作日志)和FsImage(镜像文件),将EditLog和FsImage合并得到FsImage.ckpt,将合并后的FsImage.ckpt上传到NameNode,更新NameNode的EditLog与FsImage
 	SecondaryNameNode负责定时默认1小时,从namenode上,获取fsimage和edits来进行合并,然后在发送给namenode,减少namenode的工作量。
-
-	
 ```
 
 ##### _hdfs关于block的大小_
@@ -574,12 +572,6 @@ ResourceManager   http://host:port/  默认端口号8088
 MapReduceJobHistoryServer http://host:port/ 默认端口号19888
 ```
 
-
-
-
-
-
-
 #### _core-site.xml_
 
 ```xml
@@ -855,7 +847,7 @@ task: 一个具体做Mapper或reducer的独立的工作单元.
 
 ```java
 ResourceManager负责整个集群的资源管理和分配,是一个全局的资源管理系统
-NodeManager 以心跳的
+NodeManager 以心跳
 ```
 
 
