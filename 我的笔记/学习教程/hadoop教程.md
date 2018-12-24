@@ -43,7 +43,7 @@ share hadoop各个模块编译后的jar包所在的目录
 
 ### _hadoop的操作命令_
 
-```she
+```shell
 hadoop version   查看版本
 hadoop fs  文件系统客户端
 hadoop jar 运行jar包
@@ -55,7 +55,7 @@ hadoop trace 跟踪
 
 ```
 
-
+ 
 
 ### _hadoop的安装_
 
@@ -104,8 +104,6 @@ HDFS集群中只有一个NameNode，负责所有元数据的管理,有若干Data
 SecondaryNameNode
 	对NameNode进行备份,周期性地从NameNode下载EditLog(操作日志)和FsImage(镜像文件),将EditLog和FsImage合并得到FsImage.ckpt,将合并后的FsImage.ckpt上传到NameNode,更新NameNode的EditLog与FsImage
 	SecondaryNameNode负责定时默认1小时,从namenode上,获取fsimage和edits来进行合并,然后在发送给namenode,减少namenode的工作量。
-
-	
 ```
 
 ##### _hdfs关于block的大小_
@@ -568,12 +566,6 @@ ResourceManager   http://host:port/  默认端口号8088
 MapReduceJobHistoryServer http://host:port/ 默认端口号19888
 ```
 
-
-
-
-
-
-
 #### _core-site.xml_
 
 ```xml
@@ -841,8 +833,15 @@ Containers
 ApplicationMaster
     ResourceManager将任务给ApplicationMaster，然后ApplicationMaster再将任务给NodeManager。每个Application只有一个ApplicationMaster,运行在NodeManager节点,ApplicationMaster是由ResourceManager指派的
 job: 需要执行的一个工作单元,包括输入数据,MapReduce程序和配置信息.job可以叫做Application
-task: 一个具体做Mapper或reducer的独立的工作单元.ta
+task: 一个具体做Mapper或reducer的独立的工作单元.
 
+```
+
+##### _resourcemanager_
+
+```java
+ResourceManager负责整个集群的资源管理和分配,是一个全局的资源管理系统
+NodeManager 以心跳
 ```
 
 ##### _ApplicationMaster_
@@ -857,10 +856,6 @@ Client: 一个提交给ResourceManager的一个Application程序
     监控所有任务运行状态,并在任务运行失败时重新为任务申请资源以重启任务
 ```
 
-
-
-
-
 ##### _container_
 
 ```xml
@@ -870,8 +865,6 @@ container 由applicationMaster向资源所在的NodeManager发起的,Container�
 	1) 运行ApplicationMaster的container,这是由ResourceManager(向内部的资源调度器)申请和启动的,用户提交应用程序时,可指定唯一的ApplicationMaster获取所需的资源
 	2) 运行各类任务的Container
 ```
-
-
 
 #### _yarn的执行流程_
 
