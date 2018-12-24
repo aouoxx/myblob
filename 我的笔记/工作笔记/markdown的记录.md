@@ -5,6 +5,6 @@
     style.less 文件将会被打开,然后可以可以编写我们的样式了
         code[class*="language-"], pre[class*="language-"]{
         white-space: pre-wrap;
-    }
+        }
 
 ```
