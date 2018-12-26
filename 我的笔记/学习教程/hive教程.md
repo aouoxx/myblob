@@ -234,7 +234,6 @@ Hive 创建表加上对字段的描述信息
 	alter table 表名 change 旧字段 新字段 类型;
 
 ```
-<a id="markdown-markdown-header-_hive-insert_" name="markdown-header-_hive-insert_"></a>
 #### _hive insert_
 
 

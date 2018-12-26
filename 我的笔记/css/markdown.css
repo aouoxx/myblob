@@ -1,6 +1,0 @@
-html body .highlight pre, html body pre{
-	white-space: pre-wrap;
-}
-code[class*="language-"], pre[class*="language-"]{
-	white-space: pre-wrap;
-}
