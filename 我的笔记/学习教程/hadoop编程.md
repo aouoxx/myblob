@@ -302,3 +302,111 @@ setup() 此方法被MapReduce框架仅且执行一次,在执行Map任务前,进�
 cleanup() 此方法被MapReduce框架,仅且执行一次,在执行完毕Map任务后,进行相关变量或资源的释放工作.若是将释放资源工作放入方法map()中,也会导致Mapper任务在解析,处理每一行文本后释放资源,而且在下一行文本解析前还要重复初始化,导致反复重复,程序运行效率不高
 
 ```
+
+
+
+
+
+
+
+### _mapreduce编程代码_
+
+#### _mapreduce分区_
+
+```java
+public class UserEntity implements Writable {
+    private Text name;
+    private LongWritable count;
+	// --getter/setter--
+    @Override
+    public void write(DataOutput dataOutput) throws IOException {
+        name.write(dataOutput);
+        count.write(dataOutput);
+    }
+
+    @Override
+    public void readFields(DataInput dataInput) throws IOException {
+        name = new Text();
+        name.readFields(dataInput);
+        count = new LongWritable();
+        count.readFields(dataInput);
+    }
+}
+
+
+ */
+public class UserMapper extends Mapper<LongWritable,Text,UserEntity,NullWritable> {
+    private UserEntity userEntity = new UserEntity();
+
+    /**
+     * KeyIn    Mapper的输入数据的key,这里是每行文字的起始位置(0,11,...)
+     * ValueIn  Mapper的输入数据的Value,这里是每行文字
+     * KeyOut   Mapper的输出数据的key,这里是序列化对象UserEntity
+     * ValueOut Mapper的输出数据的Value,这里不返回任何值
+     * Writable 接口是一个实现了徐丽华协议的序列化对象
+     * 在hadoop中定义了一个结构化对象都要实现Writable接口,使得该结构化对象可以序列化为字节流
+     * 字节流也可以反序列化为结构化对象,LongWritable类型,hadoop.io 对Long类型的封装
+     */
+    @Override
+    protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        // 将每行的数据以空格切分数据,获得每个字段数据 1 135  xxx
+        String[] fields = value.toString().split("\t");
+        // 赋值userEntity
+        userEntity.setName(new Text(fields[0]));
+        userEntity.setCount(new LongWritable(Long.valueOf(fields[1])));
+        // 将对象序列化
+        context.write(userEntity,NullWritable.get());
+    }
+}
+
+public class UserReduce extends Reducer<UserEntity,NullWritable,UserEntity,NullWritable> {
+    /**
+     * Reducer需要定义四个输出,输入类型泛型
+     * 四个泛型类型分别代表
+     * KeyIn    Reducer的输入数据的Key,这里是序列化对象UserEntity
+     * ValueIn  Reducer的输入数据的Value,这里是NullWritable
+     * KeyOut   Reducer的输出数据的Key，这里是序列化对象UserEntity
+     * ValueOut Reducer的输出数据的Value，这里是NullWritable
+     */
+    @Override
+    protected void reduce(UserEntity key, Iterable<NullWritable> values, Context context) throws IOException, InterruptedException {
+        Long datacount = key.getCount().get()*12;
+        key.setCount(new LongWritable(datacount));
+        context.write(key,NullWritable.get());
+    }
+}
+
+
+public class UserAnalysis {
+    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+        // 创建job对象
+        Job job = Job.getInstance(new Configuration());
+        // 指定程序的入口
+        job.setJarByClass(UserAnalysis.class);
+
+        // 指定自定义的Mapper阶段的任务处理类
+        job.setMapperClass(UserMapper.class);
+        job.setMapOutputKeyClass(UserEntity.class);
+        job.setMapOutputValueClass(NullWritable.class);
+        // 数据HDFS文件服务器读取数据路径
+        FileInputFormat.setInputPaths(job, "/mapper/inputdata.txt");
+
+        // 指定自定义的reducer阶段的任务处理类
+        job.setReducerClass(UserReduce.class);
+        // 设置输出结构的Key和Value的类型
+        job.setOutputKeyClass(UserEntity.class);
+        job.setOutputValueClass(NullWritable.class);
+
+        // 设置定义分区的处理类
+        job.setPartitionerClass(ProviderPartitioner.class);
+        // 默认ReduceTasks的数量为1, 设置为和分区数一致
+        job.setNumReduceTasks(2);
+
+        // 执行提交job方法,直到完成,参数true打印进度和详情
+        job.waitForCompletion(true);
+        System.out.println("==finished==");
+    }
+}
+
+```
+

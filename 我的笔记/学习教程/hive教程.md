@@ -143,9 +143,30 @@ map,string,struct类型数据解析
 
 
 
+#### _复杂数据类型查询_
+
+```sql
+ 数据类型
+ `filter_ads` map<string,array<struct<dsp_id:string,deal_id:string,material_id:string,ad_filter_code:int>>>
+ 
+ select filter_ads from iad_preformat_dev.iad_adx_traffic_monitor_di where d='2018-10-23'
+ => {"1231":[{"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}]}
+ 
+ select filter_ads['1231'] from iad_preformat_dev.iad_adx_traffic_monitor_di where d='2018-10-23'
+ =>  [{"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}]
+ 
+ select filter_ads['1231'][0] from iad_preformat_dev.iad_adx_traffic_monitor_di where d='2018-10-23'
+ => {"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}
+ 
+select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0].deal_id from iad_preformat_dev.iad_adx_traffic_monitor_di where d='2018-10-23'
+ => {"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}	123	1231
+ 
+```
 
 
-<a id="markdown-markdown-header-_hive的数据存储_" name="markdown-header-_hive的数据存储_"></a>
+
+
+
 ### _hive的数据存储_
 
 ```xml
@@ -169,10 +190,10 @@ map,string,struct类型数据解析
 
 ```sql
 >>> 内部表(Table)
-    1) 与数据库中的Table在概念是类似
-    2) 每一个Table在hive中都有一个相应的目录存储数据
-    3) 所有的Table数据(不包括 External Table)都保存在这个目录中
-    4) 删除表时,元数据与数据都会被删除
+    1) 内部表Load数据有两种方式: a） load data *** b）hdfs dfs -put *** 因为在Metastore文件,即mysql的hive数据库的"SDs"表中,保存着Hive表对应的hdfs路径信息
+    2) 每一个Table在hive中都有一个相应的目录存储数据， 内部表在Load数据时,如果使用LOCAL关键字,Hive会把本地文件系统的数据文件复制到Hive的/wareHouse目录。反之,则是将HDFS上的数据文件剪切到/warehourse目录
+    3) Hive在Load数据时,并不检查目录中的文件是否符合表所声明的模式。只有通过Select查询返回空值NULL,才能确定不匹配
+    4) 内部表drop的时候,表的元数据(mysql中)和数据文件(hdfs中)都会被删除
 
   create table t1( sid int, name string, age int) location '/mytable/hive/t2'; //指定表存在的位置
   -- 指定分隔符
@@ -187,7 +208,7 @@ map,string,struct类型数据解析
   --------------------------------------------------
 ```
 
-<a id="markdown-markdown-header-_hive分区表_" name="markdown-header-_hive分区表_"></a>
+
 #### _hive分区表_
 
 ```sql
@@ -271,6 +292,10 @@ hive> !ls 查询当前linux文件夹下的文件
 hive> dfs -ls / 查询当前hdfs文件系统下'/'目录下的文件
 ```
 
+
+
+### _hive表相关操作_
+
 ```sql
 Hive 创建表加上对字段的描述信息
 	create table table_name (column1 int comment '第一列',...); //comment表示字段描述
@@ -344,9 +369,43 @@ get_json_object(string json_string,string path)
 说明 解析json的字符串json_string,返回path指定的内容,如果输入的json字符串无效,那么返回null
 select  get_json_object(data,'$.owner') from dual;  --输出结果为amy
 
-json_tuple
-参数为一组键 k1,k2...和json字符串,返回值为元组
+json_tuple(jsonstr,k1,k2,...)
+参数为一组键 k1,k2...和json字符串,返回值为元组。该方法比get_json_object高效,因为可以在一次调用中输入多个键
+select a.timestamp,b.* from log a lateral view json_tuple(a.appevent,'eventid','eventname') b as f1,f2;
+
+ps: get_jsob_object和jsob_tuple 解析的对象为string类型,而非结构类型(如：map,array,struct)等
+```
+
+```sql
+select body from table_test where d='2018-10-23'
+{"1231":[{"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}]}
+
+-- get_json_object的嵌套使用, 解析数组中的元数据
+select get_json_object(body,'$.1231'),get_json_object(get_json_object(body,'$.1231[0]'),'$.dsp_id') ,body from table_test
+
+-- json_tuple和get_json_object 联合使用
+select json_tuple(get_json_object(body,'$.adContentList[0]'),'ad_type','location','app') from iad_ods_test.tmp_body_sloth_dms_biddings_di_20181106
 ```
 
 
 
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
