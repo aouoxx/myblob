@@ -115,9 +115,19 @@ export PATH=$PATH:$JAVA_HOME/bin:$ZOOKEEPER/bin:$ACTIVEMQ_HOME/bin:$REDIS_HOME/s
 ##### _zset的介绍_
 
 ```shell
+
 	Sorted set是set的一个升级版本,它在set的基础上增加了一个顺序属性,这个属性在添加修改元素时候可以指定,每次指定后,zset会自动重新按新的值进行调整顺序.
 可以理解为有两列字段的数据表,一类存value, 一列存顺序编号.操作中key理解为zset的名字.
 zadd 向名称为key的zset中添加元素member,score用于排序.如果该元素存在,则更新其顺序。(用法: zadd有序集合 顺序编号 元素值)
+
+
+zadd 添加元素,格式是zadd zset的key score值项的值,Score和项可以使多对,score可以是整数,也可以使浮点数,还可以是+inf表示无穷大 -inf 表示负无穷小
+zrem 删除元素,格式是zrem zset的key项的值,项的值可以是多个
+zcard 获取集合中元素的格式,格式是:zcard zset的key
+zcount 获取分数区间内元素个数,格式是zcount zset的key起始score 终止score
+zscore 获取元素的分数,格式是 zscore zset的key项的值,返回项在zset中的score
+zrangebyscore  获取分数区间内的元素,格式是zrangebyscore zset的key 起始score 终止score(withscore),默认是包含端点值,如果加上"("表示不包含,后面还可以加上limit来限制.
+
 
 127.0.0.1:6379> zadd ssgao_zset 1 ssgao
 (integer) 1

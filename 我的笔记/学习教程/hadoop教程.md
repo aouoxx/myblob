@@ -1113,9 +1113,9 @@ Partition分区和Reduce Tasks数量
          return (key.hashCode()&Integer.MAX_VALUE)%numReduceTasks;
      }
  }
- 即: key运算结果相同的被分到同一组,那个key到那个reducer的分配过程,是由Partitioner规定的 输入是Map的结果对<key,value>和
-     reducer的数目,输出则是分配的Reducer(整数编号).
-     就是指定Mapper输出的键值对到哪一个reducer上去
+即: key运算结果相同的被分到同一组,那个key到那个reducer的分配过程,是由Partitioner规定的输入是Map的结果对<key,value>和
+reducer的数目,输出则是分配的Reducer(整数编号).
+就是指定Mapper输出的键值对到哪一个reducer上去
  
  总结: 分区Partitioner主要作用在于以下两点
  1) 根据业务需要,产生多个输出文件

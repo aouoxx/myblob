@@ -2,13 +2,17 @@
 
 ----
 
-<a id="markdown-markdown-header-_hive的概述_" name="markdown-header-_hive的概述_"></a>
+
 ### _hive的概述_
 
 **_hive是构建在HDFS上的数据仓库_**
 
 ```java
-	关系数据库里, 表的加载模式是在加载时强制确定的(表的介绍模式是指数据库存储数据的文件格式)
+	Hive是基于hadoop的一个数据仓库工具,可以将结构化的数据文件映射为一张数据库表,并提供简单的sql查询功能,可以将sql语句转换为MapReduce任务进行运行。其优点可以通过类SQL语句快速实现简单的MapReduce统计,不必开发专门的MapReduce应用,十分适合数据仓库的统计分析。Hive是一个数据仓库基础工具在Hadoop中用来处理结构化数据。它架构在Hadoop之上,总归为大数据,并使得查询和分析更加方便。
+	在Hive中,Hive是SQL的解析引擎,它将SQL语句转译为M/R Job然后在hadoop中执行。Hive的表其实就是HDFS的目录/文件,按表名把文件夹分开。如果是分区表,则分区值是子文件夹,可以直接在M/R job中使用这些数据。
+
+
+关系数据库里, 表的加载模式是在加载时强制确定的(表的介绍模式是指数据库存储数据的文件格式)
     如果加载数据时,发现加载的数据不符合模式,关系数据库则会拒绝加载数据,这个就叫"写模式",写模式会在数据加载时候对数据模型进行校验的操作.
     hive在加载数据时和关系数据库不同,hive在加载数据时不会对数据进行检查,也不会更改被加载的数据文件,而检查数据格式的操作是在查询操作时执行,
 这种模式叫'读时模式'.
@@ -18,11 +22,75 @@
 
 ```
 
+### _hive的系统架构_
+
+```sql
+hive的系统架构图
+	用户接口cli   CLI即shell命令行
+	JDBC/ODBC   Hive的java与传统数据库JDBC的方式类似
+	WebGUI   通过浏览器访问Hive
+	解释器,编译器,优化器完成HQL查询语句从词法分析,语法分析,编译,优化以及查询计划(plan)的生成。生成的查询计划存储在HDFS中,并随后又MapReduce调用执行。
+	Hive的数据存储在HDFS中,大部分的查询由MapReduce完成( 包含*的查询,比如select * from table不会生成MR任务)
+	Hive将元数据存储在数据库中(metastore),目前只支持mysql，derby. 
+	Hive中的元数据包括表的名字,表的列和分区以及其属性,表的属性(是否为外部表等),表的数据所在目录等.
+```
+
+##### _metadata组件_
+
+```
+ 	Hive的Metastore组件是hive元数据集中存放处。Metastor组件包含两部分
+```
 
 
 
 
-<a id="markdown-markdown-header-_数据类型_" name="markdown-header-_数据类型_"></a>
+
+
+
+### _hive的安装_
+
+#### _hive的配置文件_
+
+```xml
+<configuration>
+	<property>
+    	<name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:mysql//host:port/hive?createDatabaseIfNotExist=true</value>
+    </property>
+    <property>
+    	<name>javax.jdo.option.ConnectionDriverName</name>
+        <value>com.mysql.jdbc.Driver</value>
+    </property>
+    <property>
+    	<name>javax.jdo.option.ConnectionUserName</name>
+        <value>hadoop</value>
+    </property>
+    <property>
+    	<name>javax.jdo.option.ConnectionPassword</name>
+        <value>mysql</value>
+    </property>
+    
+    <property>
+    	<name>hive.metastore.local</name>
+        <value>false</value>
+    </property>
+</configuration>
+
+```
+
+```
+	默认情况下,Hive元数据保存在内嵌的Derby数据库中,只能允许一个回话连接,只适合简单的测试。
+实际情况下生产环境中不使用,为了支持多用户会话,则需要一个独立的元数据库,使用mysql作为元数据库,Hive内部对Mysql提供了很好的支持
+```
+
+
+
+
+
+
+
+
+
 ### _数据类型_
 
 ```sql
@@ -183,7 +251,6 @@ map,string,struct类型数据解析
 
 
 
-<a id="markdown-markdown-header-_hive数据导入_" name="markdown-header-_hive数据导入_"></a>
 ### _hive数据导入_
 
 ```sql
@@ -256,3 +323,30 @@ insert into ... select
 
 
 ```
+
+
+
+
+
+### _hive函数_
+
+#### _get_json_object_
+
+#### _json_tuple_
+
+| data                                                         |
+| ------------------------------------------------------------ |
+| {"store":{"fruit":[{"weight":8,"type":"apple"},{"weight":9,"type":"pear"}]，“bicycle”:{"price":19.95,"color":"red"}},"email":"amy@only_for_json_udf_test.net","owner":"amy"} |
+
+```sql
+get_json_object(string json_string,string path)
+返回值 string
+说明 解析json的字符串json_string,返回path指定的内容,如果输入的json字符串无效,那么返回null
+select  get_json_object(data,'$.owner') from dual;  --输出结果为amy
+
+json_tuple
+参数为一组键 k1,k2...和json字符串,返回值为元组
+```
+
+
+
