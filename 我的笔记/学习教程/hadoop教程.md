@@ -1204,6 +1204,28 @@ a) Map任务成功完成之后,它会通过心跳机制通知MR-AM状态已更�
 b) 由于reducer可能失败,因此MR-AM并没有在第一个reducer检索到map输出时就立即从磁盘上删除它们。相反MR-AM会等待,直到整个MR作业完成才删除map输出  
 ```
 
+**_shuffle过程中reduce端_**
+
+```
+http请求
+	map输出文件保存在运行map任务的NodeManager节点的本地磁盘,reducer通过Http方式从各个NM上拷贝map中间结果,而每个NM通过jtty server处理这些http请求,所以可以适当配置调整jetty server的工作线程数(mapreduce.tasktracker.http.threads,默认40) 此设置针对整个MR任务,而不是针对每个Map子任务。在运行大型作业的大型集群中,此值可以根据需要调整
+	
+Copy阶段
+	现在,NM需要为分区文件运行reduce任务。更进一步,reduce任务需要集群上若干个map任务的中间结果作为特殊的分区文件。
+每个map任务的完成时间可能不同,因此只要有一个map任务完成,reduce任务就开始复制其输出(这就是reduce任务的复制阶段(copy phase)).Reduce任务默认有5个线程从map端拷贝数据,对应的属性 mapreduce.reduce.shuffle.parallecopies
+
+sort/merge阶段
+	map结果首先会被复制到reduce节点的内存缓冲区(mapreduce.reduce.shuffle.input.buffer.percent 默认为0.70.指定内存HeapSize的比例用于缓存数据,内存大小可通过mapred.child.java.opts来设置,默认是200),达到缓冲区阈值(mapreduce.reduce.shuffle.merge.percent 默认为0.66)则合并后溢写到本地磁盘。
+	随着磁盘上溢写文件的不断增多,reduce任务进入排序阶段(sort phase) 更恰当的说是合并阶段,因为排序已在map端进行,这个阶段将合并map输出,维持其顺序排序。合并是循环进行的。
+	比如,如果有50个map输出,而合并因子是10（mapreduce.task.io.sort.factor,默认10,与map的合并类似),合并将进行5次,每次将10个文件合并成一个文件,因此最后有5个中间文件。
+	ps 为了合并,压缩的map输出都必须在内存中被解压缩
+
+执行reduce
+	在最后阶段，即reduce阶段,直接把5个中间文件输入reduce()函数,从而省略了一次合并写入磁盘,再从磁盘读取数据的往返行程。最后的合并即可来自内存和磁盘片段。在reduce阶段,对已排序的输入中每个键调用一次reduce()函数.此阶段的输出直接写到HDFS中,并且本NM节点保存第一个块副本(bloak replica)
+```
+
+
+
 
 
 
