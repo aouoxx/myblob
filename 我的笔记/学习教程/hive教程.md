@@ -216,6 +216,12 @@ select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0]
    1) Partition 对应于数据库中的Partition列的密集索引
    2) 在Hive中,表中的一个Partition对应于表下的一个目录,所有的Partition的数据都存储在对应的目录中.
 
+分区实质,在数据表文件夹下再次创建分区文件夹,分区在创建表是用partitioned By定义,创建表后,可以使用Alter Table来增加和移除分区。
+	create table logs (ts bigint,line string) 
+		partitioned by (dt string ,country string)
+		row format delimited fields terminated by '\t';
+> load数据时,显示指定分区值
+	load data local inpath '/root/hive/file2' into table table_name partition (dt='xxx');
 
 > 创建以性别为分区的表
     create table partition_table
@@ -225,15 +231,18 @@ select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0]
    insert into table partition_table partition(gender='M')
    select sid,sname,from sample_data where gender='M';
 
+> 查看表的分区数
+	show partitions table_name 命令,获取表中有哪些分区
+
 ```
 ####  _hive外部表_
 
 ```sql
 >>> 外部表(External table)
-    1) 指向已经在HDFS中存在的数据,可以创建Partition
-    2) 它和内部表在元数据的组织上是相同的,而实际数据存储则有较大的差异
-    3) 外部表只有一个过程,加载数据和创建表同时完成,并不会移动到数据仓库目录中
-       只是与外部数据建立一个链接.当删除一个外部表的时候,仅仅删除该链接.
+    1) 外部表只需在创建表时显示指定表中数据存储位置即可。Hive不会把数据剪切到自己的目录
+    2) 实际上,在创建表时,Hive甚至不会检查这一外部位置是否存在。这是一个非常重要的特性,意味着可以先创建表,然后再上传数据文件
+    3) 外部表只有一个过程,加载数据和创建表同时完成,并不会移动到数据仓库目录中,只是与外部数据建立一个链接.当删除一个外部表的时候,仅仅删除该链接.
+    4) 外部表在drop时,不会碰数据文件,而只会删除元数据信息,即HDFS上的'/book'目录依旧存在。
 
 > 通过指定外部文件创建外部表    
     create external table external_student

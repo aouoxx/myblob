@@ -1157,6 +1157,35 @@ split切片的概念
 
 
 
+```java
+MapReduce为确保每个Reducer的输入都按键进行排期,数据从map输出到reducer输入这段过程称为Shuffle
+
+Map端
+1) spill 溢写
+	每个map()方法都将处理结果输出到一个环形内存缓冲区buf(100MB)中(mapreduce.task.io.sort.mb). 一般缓冲区的数据量到达阈值(mapreduce.map.sort.spill.percent)就会启动一个后台线程将缓冲区的数据溢写(spill to disk)到本地磁盘指定的目录下（mapreduce.cluster.local.dir）。溢写线程启动,首先锁定这80MB内存,执行溢写前的一系列操作.而map输出则继续往剩下的20MB内存中写,互相不影响。溢写磁盘过程中,如果缓冲区被填满,map输出会被阻塞,直到溢写磁盘过程完成。
+	map() 函数只为key做加1操作,即内存缓存区的内容为
+	<a,1> <b,1> <a,1> <c,1> <a,1> <d,1>
+2) Partition和Sort
+	溢写线程写入磁盘前的相关操作,首先根据map输出最终要传送到的reducer,把内存中数据划分成相应的分区partitioner,然后在各个分区中按key进行内排序sort. 如果制定了combiner(1)操作,它会在内排序后的输出上进行。当以上步骤完成之后,溢出线程才开始写磁盘
+ps: 写磁盘时压缩map输出,不仅可以加快写磁盘速度,节约磁盘空间,而且减少传给reduce的数据量。默认是不压缩的,启动压缩只要将mapreduce.map.output.compress设置为true即可
+
+系统默认的HashPartition:只是把 key hash后按reduceTask的个数取模,因此一般来说,不同的key分配到哪个reducer是随机的.所以单个reducer内的数据是有序的,但reducer之间的数据却是乱序的！
+	要想数据整体排序:
+		1) 只设一个reducer 2) 使用TotalOrderPartitioner
+	经过partition和sort后数据为:
+	<a,1> <a,1> <a,1> <b,1> <c,1> <d,1>
+	如果有combiner阶段,则处理后的数据为:
+	<a,3> <b,1> <c,1> <d,1>
+
+3) merge合并
+	每次spill操作都会产生一个新的溢写文件,因此在map结果写入磁盘过程中会不断产生80MB的溢写文件。
+	在map阶段完成之前,要将所有溢写文件被合并merge(或叫分组group)成一个已分区且已排序的map输出文件，此阶段是基于字节流排序过程。属性mapreduce.task.io.sort.factor 控制着一次最多合并多少个溢出写文件,默认是10. 如果我们指定了combiner，combiner会在合并后的大文件上运行。
+ps: merge的时候不同partition之间的key是不会比较的,只有同一partition的key才会进行排序和合并。
+
+merge的算法: 每个spill文件中key/value都是有序的,但是不同的文件却是乱序的,类似多个有序文件的多路归并算法。
+
+```
+
 
 
 
