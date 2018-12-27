@@ -1157,6 +1157,8 @@ split切片的概念
 
 
 
+**_shuffle的map端处理_**
+
 ```java
 MapReduce为确保每个Reducer的输入都按键进行排期,数据从map输出到reducer输入这段过程称为Shuffle
 
@@ -1183,7 +1185,23 @@ ps: 写磁盘时压缩map输出,不仅可以加快写磁盘速度,节约磁盘�
 ps: merge的时候不同partition之间的key是不会比较的,只有同一partition的key才会进行排序和合并。
 
 merge的算法: 每个spill文件中key/value都是有序的,但是不同的文件却是乱序的,类似多个有序文件的多路归并算法。
+首先分别取出需要merge的spillfile的最小的key/value,放入内存堆中,然后每次从堆中取出一个最小的值,并把此值保存到merge的输出文件中。这里和hbase中的scan的算法非常相似。
+	
+4) Map端的总结
+	对于map输出的partition分区是在写入内存buf前就做好的了.我们可以通过继承Partitioner类实现自定义分区,将自己想要的数据分到同一个reducer中.
+    在spill过程中map输出也会继续,因此,对内存buf相关参数的调优是MR的重点之一
+    排序是MR默认的行为,内存中的排序是对结构化的对象进行比较,调用的是compareTo()方法。而merge阶段排序是对序列化后的字节数组进行排序,调用Comparator比较器中的compare()方法进行二次排序。
+    Combiner在bill和merge阶段都会进行,combiner是基于key对Map结果进行规约处理,减少Map与Reduce之间的数据量传输。但并不是所有的场景都适合combine,比如平均值。
+    Combiner本身已经执行了reduce()操作,但只是处理了各节点自身的Map中间结果,而Reducer则是将各个节点的Map结果汇集,再进行统一处理。
+```
 
+**_reduce如何知道从那个NM获取map输出_**
+
+```
+a) Map任务成功完成之后,它会通过心跳机制通知MR-AM状态已更新。
+   因此,对于指定作业的MR-AM知道map输出的映射关系,reduce中有一个线程定期询问MR-AM以便获取map输出的位置,直到reduce获得所有map的输出位置。
+  
+b) 由于reducer可能失败,因此MR-AM并没有在第一个reducer检索到map输出时就立即从磁盘上删除它们。相反MR-AM会等待,直到整个MR作业完成才删除map输出  
 ```
 
 
