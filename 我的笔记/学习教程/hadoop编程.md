@@ -305,6 +305,30 @@ cleanup() 此方法被MapReduce框架,仅且执行一次,在执行完毕Map任�
 
 
 
+### _输入/出格式化类_
+
+**_输入格式化类InputFormat_**
+
+```java
+	描述MR作业的输入规范,主要功能: 输入规范检查(比如输入文件目录的检查),对数据文件进行输入切分和从输入分块中将数据记录逐一读取出来,并转化为Map输入的键值对。
+	getSplits()方法返回List<InputSplit>集合,作用是将输入文件在逻辑上划分为多个输入分片,每个分片数据存放在List集合中。
+	createRecordReader()方法返回一个RecordReader对象,该对象用来将InputSplit解析成若干个key/value对。MR框架在Map Task执行过程中，会不断调用RecordReader对象中的方法,迭代获取key/value对并交给map()函数处理【此方法在更为具体的子类中实现,如TextInputFormat】
+	
+```
+
+**_FileInputFormat类_**
+
+```
+主要功能是为子类提供统一的getSplits()方法实现。其中最核心的两个算法是:
+1) 文件切分算法
+	主要用于确定InputSplit的个数以及每个InputSplit对应的数据段。
+	FileInputFormat以文件为单位切分成各个InputSplit,对于每个文件,由三个属性值确定其对应的InputSplit的个数。
+2) host选择算法
+	待InputSplit切分方案确定后,下一步确定每个InputSplit的元数据信息。
+	这通常由四部分组成<file,start,length,hosts>,分别表示InputSplit所在的文件,起始位置,字节长度 以及所在的host(节点)列表.其中前三项很容易确定,难点在于host列表的选择方法
+	
+```
+
 
 
 
@@ -408,5 +432,58 @@ public class UserAnalysis {
     }
 }
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+### _计数器Counter_
+
+```java
+File System Counter: MR-job执行依赖的数据来自不同的文件系统,这个group表示job与文件系统交互读写统计
+// map从hdfs读取数据,包括源文件内容,split元数据。所以这个值比FileInputFormatCounter.BYTES_READ要略大些。
+	> HDFS Number of bytes read = 260407668
+// map task向本地磁盘中总共写了多少字节(其实,Reduce端的Merge也会写入本地File)
+    > FILE Number of bytes written = 984244425
+// reduce从本地文件系统读取数据(map结果保存在本地磁盘)
+    > FILE Number of bytes read = 655771325
+// 最终结果写入到HDFS
+    > HDFS Number of bytes written = 17681802
+    
+Job Counters MR子任务统计,即map tasks和reduce tasks
+	> Launched map tasks = 4 //启用map task的个数
+	> Launched reduce tasks = 5 //启用reduce task的个数
+
+MAP-REDUCE FRAMEWORK MR框架计数器
+	> Map input records 1152870  // map task从HDFS读取的文件总行数
+	> Reduce input groups 579532  // Reduce输入的分组个数,如<hello,{1,1}> <me,1><you,1> 
+	// 如果有combiner的话,那么这里的数值就等于map端Combiner运算的最后条数,如果没有,那么就应该等于map输出跳出
+	> Combine input records=0  //Combiner输入=map输出
+	> Spilled Records=67418820 // spill过程在map和reduce端都会发生,这里统计在总共从内存向磁盘中spill了多少条数据
+
+File Input Format Counters 文件输入格式化计数器
+	> Bytes Read=0 // map阶段,各个map task的map方法输入的所有value值字节数之和
+File Output Format Counters 文件输出格式化计数器
+	> Bytes Written // MR 输出总的字节数 包括 【单词】【空格】【单词个数】以及每行的【换行符】
+	
+```
+
+#### _自定义计数器_
+
+```java
+// 自定义计数器<key,value>的形式
+Counter counter = Context.getCounter("查找ssgao","ssgao")；
+if(string.contrains("ssgao")){
+	counter.increment(1L); //出现一次+1
+}
 ```
 
