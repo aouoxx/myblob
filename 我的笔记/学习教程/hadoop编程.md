@@ -487,3 +487,24 @@ if(string.contrains("ssgao")){
 }
 ```
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+### _提交MR-JOB过程_
+
+```java
+	一个标准MR-JOB的执行入口
+		// 参数true 表示检查并打印Job和Task的运行状况
+		System.out.println(job.waitForCompletion(true)?0:1);
+```
+
