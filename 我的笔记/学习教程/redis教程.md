@@ -104,13 +104,7 @@ export PATH=$PATH:$JAVA_HOME/bin:$ZOOKEEPER/bin:$ACTIVEMQ_HOME/bin:$REDIS_HOME/s
 
 
 
-
-
-
-
 ### _redis的数据类型_
-
-
 
 ##### _zset的介绍_
 
@@ -121,7 +115,8 @@ export PATH=$PATH:$JAVA_HOME/bin:$ZOOKEEPER/bin:$ACTIVEMQ_HOME/bin:$REDIS_HOME/s
 zadd 向名称为key的zset中添加元素member,score用于排序.如果该元素存在,则更新其顺序。(用法: zadd有序集合 顺序编号 元素值)
 
 
-zadd 添加元素,格式是zadd zset的key score值项的值,Score和项可以使多对,score可以是整数,也可以使浮点数,还可以是+inf表示无穷大 -inf 表示负无穷小
+zadd 添加元素,格式是zadd zset的key score值项的值,Score和项可以使多对
+		score可以是整数,也可以使浮点数,还可以是+inf表示无穷大 -inf 表示负无穷小
 zrem 删除元素,格式是zrem zset的key项的值,项的值可以是多个
 zcard 获取集合中元素的格式,格式是:zcard zset的key
 zcount 获取分数区间内元素个数,格式是zcount zset的key起始score 终止score
@@ -160,6 +155,29 @@ zcount   获取zset集合中指定分支之间存在的成员个数
 ```
 
 
+
+##### _bitmap的介绍_
+
+> _BitMap bitmap是一串连续的2进制数字 ( 0或1）,每一位所在的位置偏移为偏移offset_
+
+```shell
+Redis从2.0开始新增了setbit,gitbit,bitcount等bitmap的相关命令。虽然是新命令,但是并没有增加新的数据类型,因为setbit等命令只不过是在set上的扩展。在bitmap上可以执行and,or,xor以及其他位操作。
+
+
+setbit命令介绍
+setbit key offset value   --命令的复杂度为o(1)
+设置或清空key的value(字符串)在offset处的bit值(只能是0或者1)
+```
+
+***空间占用以及第一次分配空间需要的时间***
+
+```xml
+offset为2^32-1分配(512MB) 需要使用300ms
+offset为2^30-1分配(128MB) 需要大约80ms
+offset为2^28-1分配(32)MB 需要大约30ms
+offset为2^26-1分配(8)MB 需要大约8ms
+offset和分配的空间计算公式: ($offset/8/1024/1024)MB
+```
 
 
 

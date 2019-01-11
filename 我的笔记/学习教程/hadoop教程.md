@@ -1191,7 +1191,7 @@ merge的算法: 每个spill文件中key/value都是有序的,但是不同的文�
 	对于map输出的partition分区是在写入内存buf前就做好的了.我们可以通过继承Partitioner类实现自定义分区,将自己想要的数据分到同一个reducer中.
     在spill过程中map输出也会继续,因此,对内存buf相关参数的调优是MR的重点之一
     排序是MR默认的行为,内存中的排序是对结构化的对象进行比较,调用的是compareTo()方法。而merge阶段排序是对序列化后的字节数组进行排序,调用Comparator比较器中的compare()方法进行二次排序。
-    Combiner在bill和merge阶段都会进行,combiner是基于key对Map结果进行规约处理,减少Map与Reduce之间的数据量传输。但并不是所有的场景都适合combine,比如平均值。
+    Combiner在spill和merge阶段都会进行,combiner是基于key对Map结果进行规约处理,减少Map与Reduce之间的数据量传输。但并不是所有的场景都适合combine,比如平均值。
     Combiner本身已经执行了reduce()操作,但只是处理了各节点自身的Map中间结果,而Reducer则是将各个节点的Map结果汇集,再进行统一处理。
 ```
 
