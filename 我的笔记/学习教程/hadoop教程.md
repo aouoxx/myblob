@@ -1021,6 +1021,7 @@ public class MyWritable implements Writable{
 #### _mapreduce的运行原理_
 
 ```xml
+ 首先在map节点,使用job.setInputFormatClass定义的InputFormat将输入的数据集分隔成小的数据块split，同时InputFormat提供一个RecordReader的实现
 
 ```
 
@@ -1139,7 +1140,7 @@ reducer的数目,输出则是分配的Reducer(整数编号).
 
 
 
-##### _shuffle_
+##### _shuffle的介绍_
 
 ```java
 shuffle机制

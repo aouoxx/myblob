@@ -165,8 +165,21 @@ Redis从2.0开始新增了setbit,gitbit,bitcount等bitmap的相关命令。虽�
 
 
 setbit命令介绍
-setbit key offset value   --命令的复杂度为o(1)
-设置或清空key的value(字符串)在offset处的bit值(只能是0或者1)
+	setbit key offset value   --命令的复杂度为o(1) offset是偏移量,从0开始,从左向右
+	设置或清空key的value(字符串)在offset处的bit值(只能是0或者1)
+getbit命令介绍
+	getbit获取某一位上的值
+	getbit key offset 
+bitpos命令介绍
+	bitpos key bit [start] [end]
+	返回指定值0或1在指定区间上第一次出现的位置
+	127.0.0.1:6379> SET mykey "\x00\xff\xf0"
+		OK
+	127.0.0.1:6379> BITPOS mykey 1 0
+		(integer) 8
+	127.0.0.1:6379> BITPOS mykey 1 2  ### 表示从第2个字节开始算
+		(integer) 16
+
 ```
 
 ***空间占用以及第一次分配空间需要的时间***
