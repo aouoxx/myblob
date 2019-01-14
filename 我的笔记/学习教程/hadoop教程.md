@@ -1020,8 +1020,11 @@ public class MyWritable implements Writable{
 
 #### _mapreduce的运行原理_
 
-```xml
-
+```shell
+ 首先在map节点,使用job.setInputFormatClass定义的InputFormat将输入的数据集分隔成小的数据块split.
+同时InputFormat提供一个RecordReader，将文本的一行的行号作为key,这一行的文本作为value，这也是Map的输入是<LongWritable,Text>的原因。
+然后调用Map的map()方法,将一个个<LongWritable,Text>对，输入给Map的map()方法。
+注意输出符合Map中定义的输出格式(比如为<MyPariWriable,NullWritable).最终生成是一个List<MyPariWritable,NullWritable>。在Map阶段最后,先调用job.setPartitionnerClass对这个List进行分区,每个分区映射到一个Reducer,每个分区内又调用job.setSortComparatorComparatorClass
 ```
 
 
@@ -1139,7 +1142,7 @@ reducer的数目,输出则是分配的Reducer(整数编号).
 
 
 
-##### _shuffle_
+##### _shuffle的介绍_
 
 ```java
 shuffle机制
