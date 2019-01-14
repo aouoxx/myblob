@@ -33,7 +33,7 @@ nimbus.hosts
     整个storm集群的Nimbus节点 在"storm1.x"版本后弃用了storm
 nimbus.seeds
     用于配置主控节点的地址,可以配置多个,在storm1.x版本以后来进行storm HA的配置
-    nimbus.seeds: ["hzayq-iad-mobengine5.server.163.org", "hzayq-iad-mobengine5.server.163.org"]
+    nimbus.seeds: ["mini01", "mini02"]  //nimbus.seeds:空格["node1",空格"node4"]
     
 nimbus.thrift.port:6627
     nimbus节点的thrift服务的端口号
@@ -220,18 +220,21 @@ Workers(JVMs)
 
 Executors(Threads)
   在一个worker JVM进程中运行着多个Java线程。
-  一个executor线程可以执行一个或多个tasks,但一般默认每个executor只执行一个task。一个worker可以包含一个或多个executor,每个component(spout或bolt)至少对应于一个executor,所以可以说executor执行一个component的子集,同时一个executor只能对应于一个component；
+  一个executor线程可以执行一个或多个task任务,但一般默认每个executor只执行一个task。一个worker可以包含一个或多个executor,每个component(spout或bolt)至少对应于一个executor,所以可以说executor执行一个component的子集,同时一个executor只能对应于一个component；
+一个executor可以执行该component的一个或多个task实例。
 executor的数目,component的并发线程数只能在代码中配置(通过setBolt和setSpout的参数)
 
 Tasks(bolt/spout instances)
   Task就具体的处理逻辑对象,每一个Spout和Bolt会被当作很多task在整个集群里面执行。
-  每一个task对应到一个线程,而stream grouping则是定义怎么从一堆task发射tuple到另一堆task。
+  topology启动后,一个component(spout或bolt)的task数目是固定不变的,但该component使用的executor线程数是可以动态调整
+ <!--*即: 一个executor线程可以执行该compnent的1个或多个task实例，对于一个compnent存在这样的条件, #threads<=#tasks 线程数小于等于task数，当执行多个task实例时executor的数量就减少了 -->
   可以调用TopologyBuilder.setSpout和Topology.setBolt来设置并行度(即设置多少个task的数目)tasks的数目
-  可以不配置,默认和executor是1:1,也可以通过setNumTasks()配置
+  可以不配置,默认和executor是1:1(即一个executor线程只运行一个task),也可以通过setNumTasks()配置
 ```
 
 ```java
  TopologyBuilder builder = new TopologyBuilder();
+ // 下面代码，线程数大于了任务数,这种情况不正常,导致一个线程(executor)没有任务可以运行
  builder.setSpout("spout", new RandomSentenceSpout(), 5).setNumTasks(4);//executors数目设置为5，即线程数为5，task为4
  builder.setBolt("split", new SplitSentence(), 8).shuffleGrouping("spout");//executors数目设置为8，即线程数为8，task默认为1
  builder.setBolt("count", new WordCount(), 4).fieldsGrouping("spout", new Fields("ming"));   //executors数目设置为4，即线程数为4
