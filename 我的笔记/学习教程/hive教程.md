@@ -398,8 +398,13 @@ select json_tuple(get_json_object(body,'$.adContentList[0]'),'ad_type','location
 
 
 
+#### _substr_
 
-
+```sql
+截取字符串常用的就是substr函数或者substring函数
+substr(String a, int start), substring(String a,int start)  --两者用法一样
+	返回值:string
+	说明: 返回字符串A,从start位置到结尾的字符串
 ```
 
 
@@ -408,13 +413,3 @@ select json_tuple(get_json_object(body,'$.adContentList[0]'),'ad_type','location
 
 
 
-
-
-
-
-
-
-
-
-
-```

@@ -59,6 +59,33 @@ hadoop trace 跟踪
 
 ### _hadoop的安装_
 
+#### _ssh无密码_
+
+```shell
+无密码登录,效果也就是在master上通过ssh slavea.ssgao或ssh slaveb.ssgao就可以登录到对应计算机上,而且不用输入密码
+首先在每台机器上 ssh-keygen -t rsa 一路按回车就会设置ssh的密码和密码的存放路径。路径为~/.ssh下
+[root@master .ssh]# ll
+总用量 16
+-rw-r--r--. 1 root root  399 12月  6 23:54 authorized_keys  --已经认证的keys
+-rw-------. 1 root root 1671 12月  6 23:43 id_rsa   --私钥
+-rw-r--r--. 1 root root  399 12月  6 23:43 id_rsa.pub --公钥,三个文件
+-rw-r--r--. 1 root root 1189 12月  7 01:55 known_hosts  
+1) 在master上将公钥放到authorized_keys里。
+	[root@master .ssh]# cat id_rsa.pub >>authorized_keys 
+2）将master上的authorized_keys放到其他linux的~/.ssh目录下
+	scp authorized_keys 远程主机用户名@远程主机名或ip:存放路径
+3）如果远程机器上authorized_keys权限不足,通过chmod命令为其赋权限
+4）测试是否成功， ssh slavea.ssgao 不用密码,直接进入系统，如下表示成功了
+[root@master .ssh]# ssh slavea.ssgao
+Last login: Wed Jan 16 04:46:44 2019 from master.ssgao
+[root@slavea ~]# 
+[root@slavea ~]# exit
+logout
+Connection to slavea.ssgao closed.
+[root@master .ssh]# 
+	
+```
+
 
 
 #### _hadoop的单机版安装_
