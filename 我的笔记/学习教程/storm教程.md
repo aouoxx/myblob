@@ -291,6 +291,19 @@ Tasks(bolt/spout instances)
 
 
 
+### _storm动态调整_
+
+#### _动态修改并行参数_
+
+```java
+storm rebalance mytopology -n 3 -e myspout=5 -e splitBolt=6 -e countBolt=8
+mytopology: 我们在storm集群提交任务时,所取的任务名
+-n 表示要设置的worker数 后面跟上要具体设置的数值
+-e 表示要设置的executor数 后面跟上Spout/bolt的id(节点id)=具体的数值 (注意,重新调整的时候"="号两步不要有空格)
+```
+
+
+
 
 
 
