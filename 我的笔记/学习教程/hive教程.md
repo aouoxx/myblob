@@ -49,31 +49,105 @@ hive的系统架构图
 
 ### _hive的安装_
 
+```xml
+hive默认将元素保存在本地内嵌的Derby数据库中,Derby不支持多回话连接,所以本文将选择mysql作为元数据存储
+下载mysql的jdbc<mysql-connector-java-5.1.28.jar>放到hive安装包的lib目录下
+```
+
+
+
+#### _安装步骤_
+
+```shell
+1) 下载文件
+http://mirror.bit.edu.cn/apache/hive/
+2） 设置环境变量
+export HIVE_HOME=/root/software/apache-hive-2.3.4-bin
+export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$REDIS_HOME:$MYSQL_HOME:$HIVE_HOME/bin
+
+[root@master apache-hive-2.3.4-bin]# hive --version
+Hive 2.3.4
+Git git://daijymacpro-2.local/Users/daijy/commit/hive -r 56acdd2120b9ce6790185c679223b8b5e884aaf2
+Compiled by daijy on Wed Oct 31 14:20:50 PDT 2018
+From source with checksum 9f2d17b212f3a05297ac7dd40b65bab0
+
+3） 修改配置文件
+[root@master conf]# pwd
+/root/software/apache-hive-2.3.4-bin/conf
+[root@master conf]# cp hive-default.xml.template hive-site.xml
+
+4） 配置文件 如下
+5） 复制mysql的驱动到hive/lib下面
+6)  定义hive日志信息
+[root@master conf]# cp hive-log4j2.properties.template hive-log4j2.properties
+property.hive.log.dir = /root/software/apache-hive-2.3.4-bin/logs	
+7)  修改hive-env.sh的信息
+	HADOOP_HOME=/root/software/hadoop-2.7.4-cluster
+8） 在mysql的hive schema(在此之前需要创建mysql下的hive数据库)
+[root@master bin]# 
+[root@master bin]# schematool -dbType mysql -initSchema
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/root/software/apache-hive-2.3.4-bin/lib/log4j-slf4j-impl-2.6.2.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/root/software/hadoop-2.7.4-cluster/share/hadoop/common/lib/slf4j-log4j12-1.7.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
+Metastore connection URL:	 jdbc:mysql://192.168.10.140:3306/hive?createDatabaseIfNotExist=true&characterEncoding=UTF-8
+Metastore Connection Driver :	 com.mysql.jdbc.Driver
+Metastore connection User:	 root
+Starting metastore schema initialization to 2.3.0
+Initialization script hive-schema-2.3.0.mysql.sql
+Initialization script completed
+schemaTool completed
+
+9） 安装成功执行hive命令
+[root@master bin]# hive
+...(省略)...
+hive> show databases;
+OK
+default
+Time taken: 4.909 seconds, Fetched: 1 row(s)
+hive> use default;
+OK
+Time taken: 0.018 seconds
+hive> exit;
+[root@master bin]# 
+
+
+```
+
+
+
+
+
+
+
 #### _hive的配置文件_
 
 ```xml
 <configuration>
-	<property>
-    	<name>javax.jdo.option.ConnectionURL</name>
-        <value>jdbc:mysql//host:port/hive?createDatabaseIfNotExist=true</value>
-    </property>
-    <property>
-    	<name>javax.jdo.option.ConnectionDriverName</name>
-        <value>com.mysql.jdbc.Driver</value>
-    </property>
-    <property>
-    	<name>javax.jdo.option.ConnectionUserName</name>
-        <value>hadoop</value>
-    </property>
-    <property>
-    	<name>javax.jdo.option.ConnectionPassword</name>
-        <value>mysql</value>
-    </property>
+	 <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>root</value>
+     </property>
+     <property>
+            <name>javax.jdo.option.ConnectionPassword</name>
+            <value>ssgao</value>
+     </property>
+     <property>
+            <name>javax.jdo.option.ConnectionURL</name>
+            <value>jdbc:mysql://192.168.10.140:3306/hive?createDatabaseIfNotExist=true&useSSL=false</value>
+     </property>
+     <property>
+            <name>javax.jdo.option.ConnectionDriverName</name>
+            <value>com.mysql.jdbc.Driver</value>
+     </property>
     
-    <property>
-    	<name>hive.metastore.local</name>
-        <value>false</value>
-    </property>
+   <!---在这之前插入----> 
+   <property>
+    <name>hive.exec.script.wrapper</name>
+    <value/>
+    <description/>
+  </property>
 </configuration>
 
 ```
@@ -85,7 +159,73 @@ hive的系统架构图
 
 
 
+#### _问题集锦_
 
+```
+Metastore connection URL:	 jdbc:derby:;databaseName=metastore_db;create=true
+Metastore Connection Driver :	 org.apache.derby.jdbc.EmbeddedDriver
+Metastore connection User:	 APP
+Starting metastore schema initialization to 2.3.0
+Initialization script hive-schema-2.3.0.mysql.sql
+Error: Syntax error: Encountered "<EOF>" at line 1, column 64. (state=42X01,code=30000)
+org.apache.hadoop.hive.metastore.HiveMetaException: Schema initialization FAILED! Metastore state would be inconsistent !!
+Underlying cause: java.io.IOException : Schema script failed, errorcode 2
+Use --verbose for detailed stacktrace.
+
+先确定hive-site.xml文件名是否正确，如果不对则必须改为hive-site.xml否则不生效。然后查看其中的mysql数据连接信息是否正确修改。我这里犯了个错误就是直接从网上拷贝后粘贴到文件的上方了，后来检查文件时发现文件中其实是有这四个标签的并且都有默认值，估计执行时后面标签的内容把我添加到前面的标签内容给覆盖掉了所以才没有生效。
+```
+
+
+
+```
+[root@master bin]# hive
+which: no hbase in (/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/software/jdk1.8.0_191/bin:/root/software/hadoop-2.7.4-cluster/bin:/root/software/redis-2.8.3:/root/bin:/root/software/jdk1.8.0_191/bin:/root/software/hadoop-2.7.4-cluster/bin:/root/software/redis-2.8.3:/usr/local/mysql/bin:/root/software/jdk1.8.0_191/bin:/root/software/hadoop-2.7.4-cluster/bin:/root/software/redis-2.8.3:/usr/local/mysql/bin:/root/software/apache-hive-2.3.4-bin/bin)
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/root/software/apache-hive-2.3.4-bin/lib/log4j-slf4j-impl-2.6.2.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/root/software/hadoop-2.7.4-cluster/share/hadoop/common/lib/slf4j-log4j12-1.7.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
+
+Logging initialized using configuration in file:/root/software/apache-hive-2.3.4-bin/conf/hive-log4j2.properties Async: true
+Exception in thread "main" java.lang.IllegalArgumentException: java.net.URISyntaxException: Relative path in absolute URI: ${system:java.io.tmpdir%7D/$%7Bsystem:user.name%7D
+	at org.apache.hadoop.fs.Path.initialize(Path.java:205)
+	at org.apache.hadoop.fs.Path.<init>(Path.java:171)
+	at org.apache.hadoop.hive.ql.session.SessionState.createSessionDirs(SessionState.java:659)
+	at org.apache.hadoop.hive.ql.session.SessionState.start(SessionState.java:582)
+	at org.apache.hadoop.hive.ql.session.SessionState.beginStart(SessionState.java:549)
+	at org.apache.hadoop.hive.cli.CliDriver.run(CliDriver.java:750)
+	at org.apache.hadoop.hive.cli.CliDriver.main(CliDriver.java:686)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.hadoop.util.RunJar.run(RunJar.java:221)
+	at org.apache.hadoop.util.RunJar.main(RunJar.java:136)
+Caused by: java.net.URISyntaxException: Relative path in absolute URI: ${system:java.io.tmpdir%7D/$%7Bsystem:user.name%7D
+	at java.net.URI.checkPath(URI.java:1823)
+	at java.net.URI.<init>(URI.java:745)
+	at org.apache.hadoop.fs.Path.initialize(Path.java:202)
+
+解决方法：建立相应目录并在hive-site.xml文件中修改
+
+```
+
+
+
+
+
+### _hive的数据库和表_
+
+
+
+> _Hive的数据都是存储在hdfs上的,默认有一个根目录,在hive-site.xml中,由参数hive.metastore.warehouse.dir指定_
+
+***hive的数据库(DataBase)***
+
+```sql
+进入Hive 命令行,执行show databases; 命令,可以列出hive中的所有数据库,默认有一个default数据库,进入hive-cli后即到default数据库下
+使用use databasename; 可以切换到某个数据库下,同mysql
+```
 
 
 
@@ -411,5 +551,25 @@ substr(String a, int start), substring(String a,int start)  --两者用法一样
 
 
 
+#### _laterval view_
 
+```xml
+https://blog.csdn.net/youziguo/article/details/6837368
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+### _hive的语句_
+
+> select count(*) from user ”去查询user表的大小，因为HIVE会将这个语句翻译为MR作业在HADOOP上运行，效率非常低。
 

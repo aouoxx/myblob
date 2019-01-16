@@ -16,3 +16,17 @@ sqoop = sql -> hadoop
 
 ```
 
+
+
+
+
+
+
+### _sqoop的使用介绍_
+
+```
+
+
+https://blog.csdn.net/jsjsjs1789/article/details/70093104
+```
+
