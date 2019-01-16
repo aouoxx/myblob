@@ -74,11 +74,58 @@ vim 编辑器
 
 
 
+### _linux的常用文件_
+
+#### _linux账户和密码文件_
+
+```shell
+linux 系统中,所有用户包括系统管理员的账户和密码都可以在/etc/passwd和/etc/shadow者两个文件中找到
+/etc/passwd只有系统管理员才可以修改,其他用户可以查看
+/etc/shadow其他用户看不了
+```
+
+
+
+
+
 
 
 ## _linux的常用命令_
 
 
+
+#### _用户管理命令_
+
+```shell
+useradd 添加用户
+adduser 添加用户
+userdel 删除用户
+passwd  为用户设置密码
+usermod 修改用户命令,可以通过usermod来修改登录名,用户的家目录等等
+
+
+语法：useradd [options] username
+-d 目录       指定用户主目录,(默认是在/home目录下创建和用户名一样的目录)
+-g 用户组     指定用户所属的用户组(主组）
+-G 用户组     指定用户所属的附加组(这些组必需事先已经增加过了或者是系统中已经存在)
+-s Shell     指定用户的登录Shell
+-u UID       指定用户的用户号，如果同时有-o选项，则可以重复使用其他用户的标识号
+-c 描述       指定一段注释性描述
+-m           使用者目录若不存在则自动建立(默认选项)
+
+
+
+```
+
+#### _用户组管理命令_
+
+```shell
+groupadd 添加用户组
+groupdel 删除用户组
+groupmod 修改用户组信息
+groups 显示用户所属的用户组
+newgrp 切换到相应用户组
+```
 
 
 

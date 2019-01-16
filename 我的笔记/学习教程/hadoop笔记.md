@@ -507,7 +507,7 @@ drwxr-xr-x   - root supergroup          0 2019-01-10 18:43 /ssgao/har/ssgao-temp
 
 
 
-### _快照文件_ 
+### _快照文件_
 
 > _快照相当于对目录做一个备份。并不对立即复制所有文件,而是指向同一个文件。当写入发生时,才会产生新文件_
 
@@ -546,7 +546,77 @@ Created snapshot /ssgao_a/.snapshot/ssgao-snapshot
 
 [root@master ~]# hdfs dfs  -createSnapshot /ssgao_b  --如何目录不允许快照则无法对其创建快照
 createSnapshot: Directory is not a snapshottable directory: /ssgao_b
+
+
 ```
+
+
+
+### _回收站_
+
+```xml
+默认回收站
+默认值 fs.trash.interval=0 0表示禁用回收站,可以设置删除文件的存活时间
+   表示删除的文件在回收站的存活时间
+默认值 fs.trash.checkpoint.interval=0 检查回收站的间隔时间,如果该值为0,则该值设置和fs.trash.interval的参数值相等
+   
+要求fs.trash.checkpoint.interval<=fs.trash.interval
+fs.trash.checkpoint.interval是检查fs.trash.interval的时间                                                
+                                                 
+```
+
+***启用回收站***
+
+```xml
+修改core-site.xml,配置垃圾回收时间为1分钟(默认的时间单位为分钟)
+<property>
+	<name>fs.trash.interval</name>
+    <value>1</value>
+</property>
+```
+
+***查看回收站***
+
+```xml
+回收站集群中的路径
+```
+
+***修改访问垃圾回收站用户名称***
+
+```xml
+进入垃圾回收站用户名称,默认是dr.who,修改为root用户,core-site.xml
+<property>
+	<name>hadoop.http.staticuser.user</name>
+    <value>root</value>
+</property>
+```
+
+***通过程序删除的文件不会经过回收站,需要调用moveToTrash()才进入回收站***
+
+```java
+Trash trash = new Trash(conf);
+trash.moveToTrash(path);
+```
+
+***恢复回收站数据***
+
+
+
+***清空回收站***
+
+```xml
+hadoop fs -expunge 
+```
+
+
+
+
+
+
+
+
+
+### _总结_
 
 
 
