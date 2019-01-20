@@ -47,7 +47,7 @@ mysql下载
     drwxr-xr-x.  2 mysql mysql  4096 1月  16 19:28 support-files
 
 	--初始化数据--
-    ./scripts/mysql_install_db --user=mysql --datadir=/usr/local/mysql/data/mysql
+    ./scripts/mysql_install_db --user=mysql --datadir=/usr/local/mysql/data
     --复制配置文件到/etc/my.cnf --
     cp support-files/my-default.cnf /etc/my.cnf
     --mysql的服务脚本方法系统服务中--
@@ -167,6 +167,24 @@ Installing MySQL system tables..../bin/mysqld: error while loading shared librar
 
 
 
+***远程访问的问题***
+
+```sql
+注意mysql的my.conf的配置文件中添加"skip-grant-tables"
+
+mysql> grant all privileges on *.* to root@'%' identified by 'ssgao' ;
+ERROR 1290 (HY000): The MySQL server is running with the --skip-grant-tables option so it cannot execute this statement
+mysql> 
+mysql> 
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> grant all privileges on *.* to root@'%' identified by 'ssgao' ;
+Query OK, 0 rows affected (0.00 sec)
+```
+
+
+
 
 
 #### _mysql 启动命令_
@@ -174,4 +192,48 @@ Installing MySQL system tables..../bin/mysqld: error while loading shared librar
 ```sql
 
 ```
+
+
+
+
+
+### _mysql命令_
+
+#### _mysql 数据库操作_
+
+```sql
+create [database|schema] [if not exists] db_name [create_specification];
+mysql> create database if not exists hive;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| hive               |
+| mysql              |
+| performance_schema |
+| test               |
++--------------------+
+5 rows in set (0.00 sec)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### _总结_
 

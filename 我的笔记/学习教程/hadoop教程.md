@@ -109,6 +109,14 @@ hadoop数据文件格式化
 
 
 
+hadoop的集群版本
+
+```shell
+
+```
+
+
+
 
 
 ### _hdfs介绍_
@@ -608,6 +616,11 @@ MapReduceJobHistoryServer http://host:port/ 默认端口号19888
          <name> io.file.buffer.size </name>
          <value> 131072</value>
          <description>该属性值单位为KB,131072即为默认的64M</description>
+     </property>
+     <property>
+     	<name>hadoop.tmp.dir</name>
+        <value>/root/mydata/hadooptmp</value>
+        <description>hadooop临时文件</description>
      </property>
    </configuration>
 
