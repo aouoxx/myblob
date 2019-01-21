@@ -113,15 +113,6 @@ hadoop的集群版本
 
 ```shell
 
-配置core-site.xml
-
-配置hdfs-site.xml
-
-配置mapred-site.xml
-
-
-配置yarn-site.xml
-
 ```
 
 
