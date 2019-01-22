@@ -228,6 +228,67 @@ mysql> show databases;
 
 
 
+### _mysql语句_
+
+#### _group by_
+
+```sql
+group by 意思是将所有具有相同X字段值的记录放到一个分组中,即以X字段进行分组; 那么group by x,y 意思就是将所有相同字段x和字段y的值放在一个分组里也就是以字段x和字段y进行分组。
+group by 一般是和聚合函数一起使用,例如count,sum,avg等,使用group by的两个要素
+1) 出现在select后面的字段,要么是聚合函数,要么是group by中的字段
+	select subject,semester,count(*) from subject_selection group by subject,semester;
+2） 要筛选结果,可以先使用where,再用group by 或者先用group by 再用having。参照如下sql语句执行顺序
+	select distinct <select_columns> from <left_table> <join_type> <right_table>
+		on <join_condition>
+		where <where_condition>
+		group by <group_by_condition>
+		with {cube|rollup}
+		having <having_condition>
+		order by<order_by_list>
+		limit <limit_number>
+	
+```
+
+
+
+#### _group_concat_
+
+```sql
+将多行数据合并成一列
+mysql> select group_concat(is_https separator ',') from media_detail;
++--------------------------------------+
+| group_concat(is_https separator ',') |
++--------------------------------------+
+| 1,0,0,0,0,1,0,1,0,0,1,0,1            |
++--------------------------------------+
+group_concat() 中值为要我们合并的数据字段名
+separator 函数是用来分隔这些要合并的数据
+mysql> select group_concat(is_https, ':', deep_link) from media_detail;
++-----------------------------------------------------+
+| group_concat(is_https, ':', deep_link)              |
++-----------------------------------------------------+
+| 1:0,0:0,0:0,0:0,0:0,1:0,0:0,1:0,0:0,0:0,1:0,0:0,1:0 |
++-----------------------------------------------------+
+
+```
+
+
+
+
+
+#### _case_when_
+
+```sql
+mysql> select distinct  case when ad_type = 1 then '合约广告' when ad_type=2 then '竞价广告'  else 'other' end from ad_form;
++------------------------------------------------------------------------------------------------+
+| case when ad_type = 1 then '合约广告' when ad_type=2 then '竞价广告'  else 'other' end         |
++------------------------------------------------------------------------------------------------+
+| 竞价广告                                                                                       |
+| 合约广告                                                                                       |
++------------------------------------------------------------------------------------------------+
+
+```
+
 
 
 

@@ -489,7 +489,12 @@ insert into 和 insert overwrite的区别
 	insert into table account select id,age,name form account_tmp;
 > insert overwrite 语句
 	insert overwrite table account2 select id,age,name from account_tmp;
-> 两者的区别,insert overwrite会覆盖已经存在的数据,先将原始表的数据remove,如果存在分区的情况下,insert overwrite 会只重写当前分区数据, insert into只是简单的插入,不考虑原始表数据,直接追加到表中,最后表中的数据是原始数据和新插入的数据。
+	
+> 两者的区别: 
+	insert overwrite 会覆盖已经存在的数据,先将原始表的数据remove,如果存在分区的情况下,insert overwrite 会只重写当前分区数据
+    insert into 只是简单的插入,不考虑原始表数据,直接追加到表中,最后表中的数据是原始数据和新插入的数据。
+
+使用insert overwrite 字段数量要一致
 
 insert into ... select
 > insert into table2(字段1,字段2) select 字段1,字段2 from table1;
