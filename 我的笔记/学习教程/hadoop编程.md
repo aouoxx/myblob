@@ -434,7 +434,7 @@ public class UserAnalysis {
 
 
 
-
+### 
 
 
 
@@ -484,6 +484,18 @@ if(string.contrains("ssgao")){
 ```
 
 
+
+### _自定义序列化_
+
+```java
+自定义bean对象实现序列化接口(Writable)
+自定义bean对象要想序列化传输,必须实现序列化接口,需要注意以下7项:
+1) 必须实现Writable接口
+2) 反序列化,需要反射调用空参构造函数,所以必须有空参构造
+	public FlowBean(){ super();}
+3) 重写序列化方法
+	public void write(Data)
+```
 
 
 
