@@ -134,8 +134,8 @@ hive> exit;
             <value>ssgao</value>
      </property>
      <property>
-            <name>javax.jdo.option.ConnectionURL</name>
-            <value>jdbc:mysql://192.168.10.140:3306/hive?createDatabaseIfNotExist=true&useSSL=false</value>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:mysql://192.168.10.140:3306/hive1?createDatabaseIfNotExist=true&amp;characterEncoding=UTF-8</value>
      </property>
      <property>
             <name>javax.jdo.option.ConnectionDriverName</name>
@@ -225,6 +225,69 @@ Caused by: java.net.URISyntaxException: Relative path in absolute URI: ${system:
 ```sql
 进入Hive 命令行,执行show databases; 命令,可以列出hive中的所有数据库,默认有一个default数据库,进入hive-cli后即到default数据库下
 使用use databasename; 可以切换到某个数据库下,同mysql
+
+
+hive> 
+    > show databases;
+OK
+default
+Time taken: 4.728 seconds, Fetched: 1 row(s)
+
+-- 创建database--------------------------------------------------------
+创建数据库是用来创建数据库在Hive中语句.在Hive中数据库是一个命名空间或表的集合
+create database|schema [if not exists] <database name>
+这里,if not exists是一个可选子句,通知用户已经存在相同名称的数据库。
+
+删除数据库 drop database|schema [if exists] database_name;
+
+hive> 
+    > create database userdb;
+OK
+Time taken: 0.228 seconds
+hive> create schema mydb;
+OK
+Time taken: 0.052 seconds
+hive> 
+    > show databases;
+OK
+default
+mydb
+userdb
+Time taken: 0.008 seconds, Fetched: 3 row(s)
+hive> 
+    > 
+    > use mydb;
+OK
+Time taken: 0.018 seconds
+hive> 
+    >  create table t1( sid int, name string, age int) location '/mytable/hive/t2';
+OK
+Time taken: 0.469 seconds
+hive> 
+    > desc t1;
+OK
+sid                 	int                 	                    
+name                	string              	                    
+age                 	int                 	                    
+Time taken: 0.157 seconds, Fetched: 3 row(s)
+hive> show create table t1;
+OK
+CREATE TABLE `t1`(
+  `sid` int, 
+  `name` string, 
+  `age` int)
+ROW FORMAT SERDE 
+  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' 
+STORED AS INPUTFORMAT 
+  'org.apache.hadoop.mapred.TextInputFormat' 
+OUTPUTFORMAT 
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION
+  'hdfs://master.ssgao:9000/mytable/hive/t2'
+TBLPROPERTIES (
+  'transient_lastDdlTime'='1548341034')
+Time taken: 0.139 seconds, Fetched: 14 row(s)
+
 ```
 
 
@@ -255,8 +318,11 @@ Caused by: java.net.URISyntaxException: Relative path in absolute URI: ${system:
 
 ```
 
+#### _map,array,struct_
+
 ```sql
 map,string,struct类型数据解析
+
 > map类型: 表中的数据类型为map<string,string>
   env
   {"uid":12345,"city":"unknow"}
@@ -375,6 +441,45 @@ select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0]
 	show partitions table_name 命令,获取表中有哪些分区
 
 ```
+##### _分区介绍_
+
+```sql
+分区建表分为2种，
+	一种是单分区，也就是说在表文件夹目录下只有一级文件夹目录。
+	一种是多分区，表文件夹下出现多文件夹嵌套模式。
+
+a、单分区建表语句：
+	create table day_table (id int, content string) partitioned by (dt string);
+	单分区表，按天分区，在表结构中存在id，content，dt三列。
+
+b、双分区建表语句：
+	create table day_hour_table (id int, content string) partitioned by (dt string, hour string);
+	双分区表，按天和小时分区，在表结构中新增加了dt和hour两列。
+
+c、一次增加一个分区
+	alter table testljb add partition (age=2);
+	
+d、一次增加多个分区
+	alter table testljb add partition (age=3) partition(age=4)
+
+e、一次增加两个分区不可以写成 alter table testljb add partition (age=5,age=6)
+   这种写法实际上是: 具有多个分区字段表的分区添加,我们两次写同一个字段,而系统中并没有两个age分区字段,就会随机添加其中一个分区
+   有个表具有两个分区字段：age分区和sex分区。那么我们添加一个age分区为1，sex分区为male的数据，可以这样添加：
+   alter table testljb add partition (age=1,sex='male')；
+   
+f、删除分区
+   alter table testljb drop partition(age=1)；
+   加入表testljb有两个分区字段（上文已经提到多个分区先后顺序类似于windows的文件夹的树状结构）
+   partitioned by(age int ,sex string)，那么我们删除age分区（第一个分区）时，会把该分区及其下面包含的所有sex分区一起删掉。
+	
+分区中如何刷出新的字段	
+alter table table_name [partition] add|replace columns(col_name data_type comment xx) [cascade|restricts]
+ddl语句最后添加cascade,否则新增的列在旧的分区中不可见,查询数据时为null,重新刷新数据仍为null
+    
+```
+
+
+
 ####  _hive外部表_
 
 ```sql
@@ -421,6 +526,16 @@ select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0]
 
 
 
+### _hive建表详述_
+
+``` sql
+
+```
+
+
+
+
+
 ### _hive数据导入_
 
 ```sql
@@ -464,6 +579,7 @@ Hive 创建表加上对字段的描述信息
     	order_source string comment '订单来源',
         bank_name string comment '银行行名'
     );
+    
 > alter table table_name [partition] add|replace columns(col_name data_type comment xx) [cascade|restricts]
 	ddl语句最后添加cascade,否则新增的列在旧的分区中不可见,查询数据时为null,重新刷新数据仍为null
 
@@ -505,9 +621,81 @@ insert into ... select
 
 
 
+```sql
+hive> 
+    > insert into t1 (sid,name,age) values (1,'ssgao',30);
+Query ID = root_20190125001415_864c1887-6aa9-4942-b638-5f747c11ca84
+Total jobs = 3
+Launching Job 1 out of 3
+Number of reduce tasks is set to 0 since there's no reduce operator
+Starting Job = job_1548345485107_0001, Tracking URL = http://master.ssgao:8088/proxy/application_1548345485107_0001/
+Kill Command = /root/software/hadoop-2.7.4-cluster/bin/hadoop job  -kill job_1548345485107_0001
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 0
+2019-01-25 00:14:27,294 Stage-1 map = 0%,  reduce = 0%
+2019-01-25 00:14:34,692 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 2.38 sec
+MapReduce Total cumulative CPU time: 2 seconds 380 msec
+Ended Job = job_1548345485107_0001
+Stage-4 is selected by condition resolver.
+Stage-3 is filtered out by condition resolver.
+Stage-5 is filtered out by condition resolver.
+Moving data to: hdfs://master.ssgao:9000/mytable/hive/t2/.hive-staging_hive_2019-01-25_00-14-15_359_8894983812698269023-1/-ext-10000
+Loading data to table mydb.t1
+Table mydb.t1 stats: [numFiles=0, numRows=1, totalSize=0, rawDataSize=10]
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1   Cumulative CPU: 2.38 sec   HDFS Read: 3811 HDFS Write: 74 SUCCESS
+Total MapReduce CPU Time Spent: 2 seconds 380 msec
+OK
+Time taken: 20.807 seconds
+hive> 
+    > 
+    > select * from t1;
+OK
+1	ssgao	30
+Time taken: 0.121 seconds, Fetched: 1 row(s)
+hive> 
+hive> 
+    > 
+    > 
+    > insert into t1 values (2,'chenclin','30');
+Query ID = root_20190125001556_e1d4d2d3-d62f-49b6-9e3a-3b74e7c6935a
+Total jobs = 3
+Launching Job 1 out of 3
+Number of reduce tasks is set to 0 since there's no reduce operator
+Starting Job = job_1548345485107_0002, Tracking URL = http://master.ssgao:8088/proxy/application_1548345485107_0002/
+Kill Command = /root/software/hadoop-2.7.4-cluster/bin/hadoop job  -kill job_1548345485107_0002
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 0
+2019-01-25 00:16:02,912 Stage-1 map = 0%,  reduce = 0%
+2019-01-25 00:16:08,261 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 1.73 sec
+MapReduce Total cumulative CPU time: 1 seconds 730 msec
+Ended Job = job_1548345485107_0002
+Stage-4 is selected by condition resolver.
+Stage-3 is filtered out by condition resolver.
+Stage-5 is filtered out by condition resolver.
+Moving data to: hdfs://master.ssgao:9000/mytable/hive/t2/.hive-staging_hive_2019-01-25_00-15-56_504_6233551623849223257-1/-ext-10000
+Loading data to table mydb.t1
+Table mydb.t1 stats: [numFiles=0, numRows=2, totalSize=0, rawDataSize=23]
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1   Cumulative CPU: 1.73 sec   HDFS Read: 3813 HDFS Write: 77 SUCCESS
+Total MapReduce CPU Time Spent: 1 seconds 730 msec
+OK
+Time taken: 13.118 seconds
+hive> 
+    > select * from t1;
+OK
+1	ssgao	30
+2	chenclin	30
+Time taken: 0.08 seconds, Fetched: 2 row(s)
+hive> 
+
+```
+
+
+
 
 
 ### _hive函数_
+
+https://www.cnblogs.com/jifengblog/p/9286800.html
 
 #### _get_json_object_
 
@@ -521,6 +709,8 @@ insert into ... select
 get_json_object(string json_string,string path)
 返回值 string
 说明 解析json的字符串json_string,返回path指定的内容,如果输入的json字符串无效,那么返回null
+注意 输入的字段需要必须为string 类型,如果是array,struct 类型则无效
+
 select  get_json_object(data,'$.owner') from dual;  --输出结果为amy
 
 json_tuple(jsonstr,k1,k2,...)
@@ -554,6 +744,16 @@ substr(String a, int start), substring(String a,int start)  --两者用法一样
 
 
 
+#### _concat_ws_
+
+```sql
+concat_ws(string SEP,string A,string B,...)
+SEP: 返回输入字符串连接后的结果,SEP表示各个字符串之间的分隔符
+返回值: string
+```
+
+
+
 
 
 #### _laterval view_
@@ -563,6 +763,15 @@ https://blog.csdn.net/youziguo/article/details/6837368
 ```
 
 
+
+
+
+#### _explode行转列_
+
+``` sq
+explode(array(or map))
+将输入的一行数组或者map转换为列输出
+```
 
 
 
@@ -578,3 +787,43 @@ https://blog.csdn.net/youziguo/article/details/6837368
 
 > select count(*) from user ”去查询user表的大小，因为HIVE会将这个语句翻译为MR作业在HADOOP上运行，效率非常低。
 
+
+
+#### _show tables_
+
+```sql
+hive> 
+    > show tables;
+OK
+t1
+Time taken: 0.023 seconds, Fetched: 1 row(s)
+
+```
+
+
+
+#### _show create table tbname_
+
+#### _show partitions_
+
+
+
+
+
+### _hive的udf_
+
+> _当hive提供的内置函数无法满足我们业务处理需要时,就需要考虑使用用户自定义函数(UDF: user-defined function)_
+
+```shell
+ 
+```
+
+
+
+
+
+
+
+
+
+### _总结_
