@@ -480,6 +480,53 @@ ddl语句最后添加cascade,否则新增的列在旧的分区中不可见,查�
 
 
 
+#### _分区表插入数据_
+
+```sql
+
+向分区表home插入新的数据,该数据的分区为partition(province='shandong')
+
+hive> insert into home partition(province='shandong') select id,address,no,area from home_local;
+Query ID = root_20190125232233_f78aa357-c5d1-440d-a246-bc44c1220f7d
+Total jobs = 3
+Launching Job 1 out of 3
+Number of reduce tasks is set to 0 since there's no reduce operator
+Starting Job = job_1548418373210_0002, Tracking URL = http://master.ssgao:8088/proxy/application_1548418373210_0002/
+Kill Command = /root/software/hadoop-2.7.4-cluster/bin/hadoop job  -kill job_1548418373210_0002
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 0
+2019-01-25 23:22:39,985 Stage-1 map = 0%,  reduce = 0%
+2019-01-25 23:22:44,262 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 1.07 sec
+MapReduce Total cumulative CPU time: 1 seconds 70 msec
+Ended Job = job_1548418373210_0002
+Stage-4 is selected by condition resolver.
+Stage-3 is filtered out by condition resolver.
+Stage-5 is filtered out by condition resolver.
+Moving data to: hdfs://master.ssgao:9000/mydb/home/province=shandong/.hive-staging_hive_2019-01-25_23-22-33_545_7568553728674045364-1/-ext-10000
+Loading data to table mydb.home partition (province=shandong)
+Partition mydb.home{province=shandong} stats: [numFiles=1, numRows=1, totalSize=23, rawDataSize=22]
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1   Cumulative CPU: 1.07 sec   HDFS Read: 3664 HDFS Write: 106 SUCCESS
+Total MapReduce CPU Time Spent: 1 seconds 70 msec
+OK
+Time taken: 13.211 seconds
+hive> select * from home ;
+OK
+1	杭州	3	江南国际城	hangzhou
+1	shandong	4	gaozhuang	shandong
+Time taken: 0.077 seconds, Fetched: 2 row(s)
+
+查看该分区表的数据路径会发现多了province=shandong的文件夹
+[root@slavea ~]# hadoop fs -ls /mydb/home/
+Found 2 items
+drwxr-xr-x   - root supergroup          0 2019-01-25 23:02 /mydb/home/province=hangzhou
+drwxr-xr-x   - root supergroup          0 2019-01-25 23:22 /mydb/home/province=shandong
+
+```
+
+
+
+
+
 ####  _hive外部表_
 
 ```sql
@@ -528,8 +575,120 @@ ddl语句最后添加cascade,否则新增的列在旧的分区中不可见,查�
 
 ### _hive建表详述_
 
-``` sql
+#### _详细建表语句_
 
+``` sql
+标准hql建表语法
+create [external] table [if not exists] table_name
+[(col_name data_type [comment col_comment],...)]
+[comment table_comment]
+[partitioned by (col_name data_type [comment col_comment]),...]
+[clustered by (col_name,col_name,...)]
+[sorted by (col_name [asc|desc],...)] into num_buckets BUCKETS]
+[row format delimited fiedls terminated by ',']
+[collection items terminated by '-']
+[map keys terminated by ':']
+[stored as file_format]
+[location hdfs_path]
+
+1> create table 创建一个指定名字的表,如果相同名字表已经存在,则抛出异常。
+    我们可以用if not exist 选项来忽略这个异常,一般也可以不加这个if not exits语句,最多抛出错误
+    
+2> external 关键字让用户创建一个外部表,默认是内部表,创建外部表必须同时指定一个指定实际数据的路径(location)
+	hive创建内部表时,会将数据移动到数据仓库指向的路径,若创建外部表仅记录数据所在路径,不对数据的位置进行任何该表。
+	
+3> comment 表示为表字段或表内容添加注释说明
+
+4> partitioned by 为表做分区,hive中所谓的分区表就是对表新增一个字段,就是分区的名字,这样我们在操作表中的数据时可以按分区字段进行过滤。
+
+5> [row format ] 指定表存储各列数据的划分格式,这里指定的是逗号分隔符,可以是其他分隔符
+
+6> stored as sequencefile|textfile|rcfile 如果文件数据存文本,可以使用stored as textfile.如果数据要压缩使用stored as sequencefile
+
+7> clustered by 对于每个表(table)或者分区,hive可以进一步组织成桶,也就是说桶是更为细粒度的数据范围划分。
+	hive也针对某一列进行桶的组织
+	hive采用对列值哈希,然后除以桶的个数求余的方式决定该条记录存放在哪个桶中
+
+8> location 其实是定义hive表的数据在hdfs上的存储路径,一般内部表不需要自定义，但是如果是外部表最好直接指定一个路径,否则会使用默认路径
+
+```
+
+**_inputformt/outputformat/serde_**
+
+```sql
+https://blog.csdn.net/tianyeshiye/article/details/79822986
+```
+
+
+
+
+
+#### _建表语句详细_
+
+```sql
+CREATE TABLE `t1`(
+  `sid` int, 
+  `name` string, 
+  `age` int)
+ROW FORMAT SERDE 
+  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' 
+STORED AS INPUTFORMAT 
+  'org.apache.hadoop.mapred.TextInputFormat' 
+OUTPUTFORMAT 
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION
+  'hdfs://master.ssgao:9000/mytable/hive/t2'
+TBLPROPERTIES (
+  'COLUMN_STATS_ACCURATE'='true', 
+  'numFiles'='0', 
+  'numRows'='3', 
+  'rawDataSize'='35', 
+  'totalSize'='0', 
+  'transient_lastDdlTime'='1548346852')
+  
+  
+创建外部表  
+CREATE EXTERNAL TABLE `home`(
+  `id` int COMMENT 'id', 
+  `address` string COMMENT '地址', 
+  `no` int COMMENT '人数', 
+  `area` string COMMENT '小区')
+PARTITIONED BY ( `province` string COMMENT '省份')
+ROW FORMAT DELIMITED 
+  FIELDS TERMINATED BY ',' 
+STORED AS INPUTFORMAT 
+  'org.apache.hadoop.mapred.TextInputFormat' 
+OUTPUTFORMAT 
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION
+  'hdfs://master.ssgao:9000/mydb/home'
+TBLPROPERTIES (
+  'transient_lastDdlTime'='1548428115')
+
+hive> 
+    > alter table home add partition (province='hangzhou');
+OK
+Time taken: 0.275 seconds
+hive> select * from home;
+OK
+1	杭州	3	江南国际城	hangzhou
+Time taken: 0.372 seconds, Fetched: 1 row(s)
+hive> 
+
+
+```
+
+
+
+
+
+#### _可能出现的问题_
+
+```sql
+hive> 
+    > alter table home add partition (province='hangzhou');
+FAILED: Execution Error, return code 1 from org.apache.hadoop.hive.ql.exec.DDLTask. MetaException(message:hdfs://master.ssgao:9000/mydb/home/province=hangzhou is not a directory or unable to create one)
+说明没有分区被添加
 ```
 
 
@@ -687,6 +846,19 @@ OK
 Time taken: 0.08 seconds, Fetched: 2 row(s)
 hive> 
 
+hive> desc home_local ;
+OK
+id                  	int                 	                    
+address             	string              	                    
+no                  	int                 	                    
+area                	string              	                    
+Time taken: 0.045 seconds, Fetched: 4 row(s)
+hive> insert into home_local (id,address,no) values (3,'jining',3);
+hive> select * from home_local;
+OK
+1	shandong	4	gaozhuang
+3	jining	3	NULL
+Time taken: 0.058 seconds, Fetched: 2 row(s)
 ```
 
 
