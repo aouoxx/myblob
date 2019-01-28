@@ -591,9 +591,10 @@ create [external] table [if not exists] table_name
 [partitioned by (col_name data_type [comment col_comment]),...]
 [clustered by (col_name,col_name,...)]
 [sorted by (col_name [asc|desc],...)] into num_buckets BUCKETS]
-[row format delimited fiedls terminated by ',']
+[row format delimited fields terminated by ',']
 [collection items terminated by '-']
 [map keys terminated by ':']
+[lines terminated by '\n']
 [stored as file_format]
 [location hdfs_path]
 
@@ -623,6 +624,23 @@ create [external] table [if not exists] table_name
 
 ```sql
 https://blog.csdn.net/tianyeshiye/article/details/79822986
+```
+
+
+
+```sql
+hive中,默认使用的是TextInputFormat,一行表示一条记录。在每条记录(一行中),默认使用^A分割各个字段
+有些时候,我们往往面对多行,结构化的文档,并需要将其导入Hive处理,这时我们就需要自定义InputFormat,OutputFormat以及SerDe了
+三者之间的关系,我们直接使用Hive的官网的说法
+SerDe is short name for “Serializer and Deserializer”
+Hive uses SerDe(and !FileFormat) to read and write table rows
+HDFS files -> InputFileFormat -> <key,value> ->Deserializer -> Row object
+Row object ->Serializer -> <Key,Value> -> OutputFileFormat -> HDFS files
+即: 当面临一个HDFS上的文件时,Hive将如下处理(以读为例)
+		a> 调用InputFormat,将文件切成不同的文档。即每篇文档即一行(Row)
+		b> 调用SerDe的Derserializer,将一行(Row),切分为各个字段
+	当Hive指定insert操作,将Row写入文件时,主要调用OutputFormat,SerDe的Seriliazer,顺序与读取相反
+		
 ```
 
 
