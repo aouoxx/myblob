@@ -1011,7 +1011,78 @@ Time taken: 0.023 seconds, Fetched: 1 row(s)
 > _当hive提供的内置函数无法满足我们业务处理需要时,就需要考虑使用用户自定义函数(UDF: user-defined function)_
 
 ```shell
- 
+ 新建Java maven项目
+ 添加依赖
+ <dependencies>
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>2.7.4</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+```
+
+
+
+```java
+/** hive自定义函数 */
+package hive.udf;
+public class ItcastFunc extends UDF{
+    // 重载
+    public String evaluate(String input){
+        return input.toLowerCase(); //将大写字母转换为小写
+    }
+    public int evaluate(int a,int b){
+        return a+b; //计算两个数之和
+    }
+}
+
+*> 打成jar包上传到服务器
+*> 将jar包添加到hive的classpath
+  hive> add jar hdfs://master.ssgao:9000/root/hivedata/udf.jar;
+*> 创建临时函数与开发好的java class关联
+  create temporary function udffunc as 'hive.udf.ItcastFunc'
+    temporary 表示临时方法
+    udffunc 表示hive中定义的函数名
+    hive.udf.ItcastFunc 为自定义方法的全类路径
+    
+ *> 在hive中使用自定义的函数
+ 	select udffunc("ABC") from dual;  //输出abc
+ 	select udffunc(2,3) from dual; //输出 5
 ```
 
 
