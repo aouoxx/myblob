@@ -516,3 +516,31 @@ if(string.contrains("ssgao")){
 		System.out.println(job.waitForCompletion(true)?0:1);
 ```
 
+
+
+
+
+
+
+### _fileInputFormat_
+
+```java
+FileInputFormat 源码解析
+ 1) 找到我们数据存储的目录
+ 2) 开始遍历处理(规划切片)目录下的每一个文件
+ 3) 遍历第一个文件
+ 	  a) 获取文件大小fs.sizeOff(ss.txt)
+      b) 计算切片大小 computeSliteSize(Math.max(minSize,Math.min(maxSize,blockSize)))=blocksize=128M
+      c) 默认情况下,切片大小=blocksize
+      d) 开始切,形成第一个切片:ss.txt-0~128M 第二个切片:ss.txt-128~256M 第三个切片:ss.txt-256~300M 
+          (每次切片时,都要判断切完剩下的部分是否大于块的1.1倍,不大于1.1倍就划分一块且切片)
+      e) 将切片信息写入到一个切片规划文件中
+      f) 整个切片的核心过程在getSplit()方法中完成
+      g) 数据切片只是在逻辑上对输入数据进行分片,并不会再磁盘上将器切分成分片进行存储.InputSplit只记录了分片的元数据信息,比如起始位置,长度以及所在的节点列表等
+      h) 注意:block是HDFS物理上存储的数据,切片是对数据逻辑上的划分
+  4) 提交切片规划文件到yarn中,yarn上的AppMaster就可以根据切片规划文件计算开启maptask个数     
+     
+```
+
+
+
