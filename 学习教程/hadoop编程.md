@@ -544,3 +544,100 @@ FileInputFormat 源码解析
 
 
 
+**_FileInputFormat切片机制_**
+
+```java
+FileInputFormat中默认的切片机制
+1) 简单地按照文件的长度进行切片
+2) 切片大小,默认等于block大小
+3) 切片时不考虑数据集整体,而是逐个针对每一个文件进行单独切片
+	比如待处理数据有两个文件
+		file1.txt 320M
+		file2.txt 10M
+	经过FileInputFormat的切片机制运算后,形成的切片信息如下:
+		file1.txt.split1--- 0~128
+		file1.txt.split2--- 128~256
+		file2.txt.split3--- 256~320
+	
+FileInputFormat切片大小的配置参数
+	通过分析源码,在FileInputFormat中,计算切片大小的逻辑:Math.max(minSize,Math.min(maxSize,blockSize));
+切片主要由下面几个值来运算决定:
+	mapreduce.input.fileinputformat.split.minsize=1 默认值为1
+	mapreduce.input.fileinputformat.split.maxsize=Long.MAXValue 默认值为Long.MAXValue
+	因此,默认情况下,切片大小为=blocksize
+	maxsize(切片最大值): 参数如果调得比blocksize小,则会让切片变小,而且就等于配置的这个参数的值
+	minsize(切片最小值): 参数如果调得比blockSize大,则会切片变得比blocksize还大.
+              
+```
+
+#### _获取切片信息_
+
+```java
+// 根据文件类型获取切片信息
+FileSplit inputSplit = (FileSplit) context.getInputSplit();
+// 获取切片的文件名称
+String name = inputSplit.getPath().getName();
+```
+
+
+
+
+
+
+
+#### _FileInputFormat的实现类_
+
+```java
+MapReduce任务的输入文件一般是存储在HDFS里面。
+输入文件的格式包括:基于行的日志文件,二进制格式文件等。这些文件一般会很大,达到数十GB,甚至更大。
+MapReduce是FileInputFormat接口来读取这些数据
+
+常见的FileInputFormat的接口实现类包括:
+	TextInputFormat,KeyValueInputFormat,NLineInputFormat
+CombineTextInputFormat和自定义的InputFormat等。
+
+TextInputFormat
+	TextInputFormat是默认的InputFormat,每条记录是一行输入。
+	键是LongWritable类型,存储该行在整个文件中起始字节偏移量。值是这行的内容,不包括任何终止符(换行符和回车符)
+```
+
+
+
+
+
+
+
+#### _NLineInputFormat_
+
+```java
+如果使用NlineInputFormat,代表每个map进程处理的InputSplit不再按block块去划分,而是按NlineInputFormat指定的行数N来划分。
+即输入文件的总行数/N=切片数,如果不整除,切片数=相除后的结果+1;
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### _总结信息_
+
