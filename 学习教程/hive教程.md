@@ -312,6 +312,7 @@ Time taken: 0.139 seconds, Fetched: 14 row(s)
     > Struct 结构类型, 可以包含不同数据类型的元素。这些元素可以通过"点语法"的方式来得到所需要的元素。
       create table student4( sid int,info struct<name:string,age:int,sex:string> );
       数据:{1, {'Tom',10,'男'}}
+      
  时间类型
     > Date 从hive0.12.0 开始支持
     > Timestramp 从Hive0.8.0 开始支持
@@ -368,6 +369,32 @@ select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0]
  => {"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}	123	1231
  
 ```
+
+
+
+### _hive的存储格式_
+
+> _Hive会为每个数据库在HDFS上创建一个目录,该数据库的表会以子目录形式存储,表中的数据会在表目录下以文件形式存储_
+
+```sql
+textFile
+	textfile为默认格式，存储方式为行存储。数据不做压缩,磁盘开销大,数据解析开销大
+
+SequeneceFile
+	sequenceFile是Hadoop API提供的一种二进制文件支持,其具有使用方便,可分割,可压缩的特点
+	sequenceFile支持三种压缩选择,NONE,RECORD,BLOCK。Record压缩率低,一般建议使用BLOCK压缩。
+	
+RCFile
+	一种行列存储相结合的存储方式
+
+ORCFile
+	数据按照行分块,每个块按照列存储,其中每个块都存储有一个索引。
+	Hive给出的新格式,属于RCFile的升级版,性能有大幅度的提升,而数据可以压缩存储,压缩块, 快速列存取
+	
+	
+```
+
+
 
 
 
