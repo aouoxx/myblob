@@ -666,6 +666,24 @@ job.setNumReduceTasks(4);
 
 
 
+```java
+copy阶段
+  reduceTask从各个maptask上远程copy一片数据,并针对某一片数据,如果其大小超过一定阈值,则写到磁盘上,否则直接放到内存中。
+ 
+merge阶段
+  在远程copy数据的同时,reducetask启动了两个后台线程对内存和磁盘上的文件进行合并,以防止内存使用过多或磁盘上文件过多
+  
+sort阶段
+   按照mapreduce语义,用于编写reduce()函数输入数据是按key进行聚集的一组数据。(即grouping)
+   为了将key相同的数据聚在一起,hadoop采用了基于排序的策略。由于各个maptask已经实现对自己的处理结果进行了局部排序
+   因此,reducetask只需对所有数据进行一次归并排序即可。
+  
+reduce阶段
+	reduce()函数将计算结果写到HDFS上。
+```
+
+
+
 
 
 
