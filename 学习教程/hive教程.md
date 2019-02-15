@@ -647,7 +647,7 @@ create [external] table [if not exists] table_name
 
 ```
 
-**_inputformt/outputformat/serde_**
+##### _inputformt/outputformat/serde_
 
 ```sql
 https://blog.csdn.net/tianyeshiye/article/details/79822986
@@ -666,6 +666,7 @@ Row object ->Serializer -> <Key,Value> -> OutputFileFormat -> HDFS files
 即: 当面临一个HDFS上的文件时,Hive将如下处理(以读为例)
 		a> 调用InputFormat,将文件切成不同的文档。即每篇文档即一行(Row)
 		b> 调用SerDe的Derserializer,将一行(Row),切分为各个字段
+		
 	当Hive指定insert操作,将Row写入文件时,主要调用OutputFormat,SerDe的Seriliazer,顺序与读取相反
 		
 ```
@@ -983,6 +984,7 @@ SEP: 返回输入字符串连接后的结果,SEP表示各个字符串之间的�
 
 ```xml
 https://blog.csdn.net/youziguo/article/details/6837368
+行转列
 ```
 
 
