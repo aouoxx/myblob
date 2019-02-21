@@ -632,7 +632,29 @@ TextInputFormat
 
 
 
+### _OutputFormat_
 
+```java
+
+```
+
+
+
+
+
+
+
+### _Join的应用_
+
+```java
+ReduceJoin
+	原理: Map端的主要工作为来自不同表(文件)的key/value对打标签以区别不同来源的记录。
+	然后用连接字段作为key,其余部门和新加的标志作为value,最后进行输出。
+reduce端的主要工作: 在reduce端以连接字段作为key,分组已经完成,我们只需要在每一个分组中将那些来源于不同文件的记录(在map阶段已经打标记)分开，最后进行合并就OK了
+
+缺点:
+这种方式的缺点很明显就是会造成map和reduce端也就是shuffle阶段出现大量的数据传输,效率很低
+```
 
 
 
