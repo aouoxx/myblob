@@ -866,6 +866,10 @@ yarn-site.xml的配置文件
 
 ### _yarn的介绍_
 
+_yarn是一个资源调度平台,负责为运算程序提供服务器运算资源,相当于一个分布式的操作系统平台。_
+
+_mapreduce等运算程序相当于运行与操作系统之上的应用程序。_
+
 
 
 #### _yarn的构成_
@@ -875,15 +879,18 @@ ResourceManager
     一个cluster只有一个,负责资源调度,资源分配等工作
 NodeManager
     运行DataNode节点,负责启动Application和对资源的管理
-JobHistoryServer
-    负责查询job运行进度以及元数据管理
+
 Containers
     container通过ResourceManager分配,包括容器的CPU，内存等资源
 ApplicationMaster
-    ResourceManager将任务给ApplicationMaster，然后ApplicationMaster再将任务给NodeManager。每个Application只有一个ApplicationMaster,运行在NodeManager节点,ApplicationMaster是由ResourceManager指派的
+    ResourceManager将任务给ApplicationMaster，然后ApplicationMaster再将任务给NodeManager。每个Application只有一个
+
+ApplicationMaster,运行在NodeManager节点,ApplicationMaster是由ResourceManager指派的
 job: 需要执行的一个工作单元,包括输入数据,MapReduce程序和配置信息.job可以叫做Application
 task: 一个具体做Mapper或reducer的独立的工作单元.
 
+JobHistoryServer
+    负责查询job运行进度以及元数据管理
 ```
 
 ##### _resourcemanager_
@@ -953,6 +960,54 @@ maptask虽然不存在了,但是有文件,它们被nodemanager管理,reduce可�
 13 直到mapreduce的程序执行完成
 
 当mrappmaster挂掉之后,resourcemanager会重新找其他的nodemanager并重新启动一个mrappmaster,所以mrappmaster存在单点故障问题
+```
+
+
+
+### _推测执行_
+
+***作业完成时间取决于最慢的任务完成时间***
+
+_一个作业由若干个Map任务和Reducer任务构成。因硬件老化,软件bug等，某些任务可能运行非常慢。比如：系统中有99%的Map任务都完成了,只有少数几个Map老是进度非常慢,完不成，这种情况需要怎么处理_
+
+***推测执行机制***
+
+_发现拖后腿的任务,比如某个任务运行速度远慢于任务平均速度。为拖后腿任务启动一个备份任务,同时运行。谁先运行完,，则采用谁的结果_
+
+
+
+***执行推测任务的前提条件***
+
+```xml
+1) 每个task只能由一个备份任务
+2) 当前job已完成的task必须不小于0.05(5%)
+3) 开启推测执行参数设置。hadoop2.7.2 mapred-site.xml文件中默认是打开的
+<property>
+	<name>mapreduce.map.speculative</name>
+    <value>true</value>
+    <description>if true,then mulitple instance of some map tasks may be execute in parallel</description>
+</property>
+<property>
+	<name>mapreduce.reduce.speculative</name>
+    <value>true</value>
+    <description>if true,then multiple instance of some reduce tasks may be executed in parallel</description>
+</property>
+```
+
+***不能启动任务推测的执行机制***
+
+```xml
+1) 任务间存在严重的负载倾斜
+2) 特殊任务,比如任务向数据库中写数据
+```
+
+
+
+```xml
+假设某一时刻,任务T的执行进度为progress,则可通过一定的算法推测出该任务的最终完成时刻 estimeEndTime。
+另一方面,如果此刻为该任务启动一个备份任务,则可推断它可能的完成时刻estimeEndTime`, 于是可得出以下几个公式:
+	estimateEndTime = estimatedRunTime + taskStartTime
+  推测执行完时刻60
 ```
 
 
@@ -1282,7 +1337,66 @@ sort/merge阶段
 
 
 
+### 调优参数
 
+**以下参数是在用户自己的mr应用程序中配置就可以生效(mapred-default.xml)**
+
+<table>
+    <th>参数配置</th>
+    <th>参数说明</th>
+    <tr>
+    	<td>mapreduce.map.memory.mb</td>
+        <td>
+            一个map task 可使用的资源上限(单位:MB)，默认是1024
+            如果map task实际可使用的资源量超过该值,则会被强杀死
+        </td>
+    </tr>
+    <tr>
+    	<td>mapreduce.reduce.memory.mb</td>
+        <td>
+        	一个reduce task 可以使用的资源上限(单位：mb),默认为1024
+            如果reduce task 实际可以使用的资源量超过该值,则会被强制杀死
+        </td>
+    </tr>
+    <tr>
+        <td>mapreduce.map.cpu.vcores</td>
+        <td>每个map task可以使用最多cpu core的数目,默认值为:1</td>
+    </tr>
+    <tr>
+    	<td>mapreduce.reduce.cpu.vcores</td>
+        <td>每个reduce task可以使用最多cpu core的数目,默认值为:1</td>
+    </tr>
+    <tr>
+    	<td>mapreduce.reduce.shuffle.parallelcopies</td>
+        <td>每个reduce去map中拿数据的并行数,默认值是5</td>
+    </tr>
+    <tr>
+        <td>mapreduce.reduce.shuffle.merge.percent</td>
+        <td>buffer中的数据达到多少比例开始写入磁盘,默认值0.66</td>
+    </tr>
+    <tr>
+    	<td>mapreduce.reduce.shuffle.input.buffer.percent</td>
+        <td>buffer大小占reduce可用内存的比例,默认值0.7</td>
+    </tr>
+    <tr>
+    	<td>mapreduce.reduce.intput.percent</td>
+        <td>指定多少比例的内存用来存放buffer的数据,默认值为0.0</td>
+    </tr>
+</table>
+
+
+
+***应该在yarn启动之前就配置在服务器的配置文件中才能生效(yarn-default.xml)***
+
+| 配置参数                                 | 参数说明                                       |
+| ---------------------------------------- | ---------------------------------------------- |
+| yarn.scheduler.minimum-allocation-mb     | 给应用程序container分配的最小内存,默认值为1024 |
+| yarn.scheduler.maximun-allocation-mb     | 给应用程序container分配的最大内存,默认值为8192 |
+| yarn.scheduler.minimun-allocation-vcores | 每个container申请的最小cpu核数,默认值:1        |
+| yarn.scheduler.maximun-allocation-vcores | 每个container申请的最大cpu核数,默认值:32       |
+| yarn.nodemanager.resource.memory-mb      | 给contianer分配的最大物理内存,默认值: 8192     |
+
+***shuffle性能优化的关键参数, 应该在yarn启动之前就配置好(mapred-default.xml)***
 
 
 

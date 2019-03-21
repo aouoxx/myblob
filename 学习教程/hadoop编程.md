@@ -225,7 +225,7 @@ maptask并行度决定map阶段任务处理并发度,进而影响整个job的处
 个split)，然后每一个split分配一个maptask,并行实例处理。
 ```
 
-#### _FileInputFormat切片机制_
+#### _FileInputFormat切片机制_  
 
 
 ```java
@@ -613,6 +613,32 @@ TextInputFormat
 ```
 
 
+
+
+
+#### ***CombineTextInputFormat***
+
+```java
+关于大量小文件的优化策略
+默认情况下TextInputFormat对任务的切片机制是按文件规划切片,不管文件多小,都会使一个单独的切片,都会交给一个mapTask,这样如果有大量小文件,就会产生大量的maptask
+处理效率就非常的低
+
+优化策略
+1）最好的方法,在数据处理系统的最前端(预处理/采集),将小文件先合并成大文件(如进行归档操作)
+2) 补救措施：如果已经是大量小文件在HDFS中了,可以使用另一种InputFormat来做切片(CombineTextInputFormat) 它的切片逻辑跟TextInputFormat不同，它可以将多个小文件从逻辑上规划到一个切片中,这样多个小文件就可以交给一个maptask
+
+3) 优先满足最小切片,不超过最大切片大小
+	CombineTextInputFormat.setMaxInputSplitSize(job,4194304) 4M
+	CombineTextInputFormat.setMinInputSplitSize(job,2097152) //2M
+    举例: 0.5m+1m+0.3m+5m = 2m + 4.8m =2m+4m+0.8m
+   
+具体的实现步骤
+ // 如果不设置InputFormat,它默认使用的是TextInputFormat.class
+ job.setInputFormatClass(CombineTextInputFormat.class);
+ CombineTextInputFormat.setMaxInputSplitSize(job,4194304); //4M
+ CombineTextInputFormat.setMinInputSplitSize(job,2097152); //2M
+
+```
 
 
 
