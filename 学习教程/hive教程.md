@@ -148,6 +148,7 @@ hive> exit;
 #### _hive的配置文件_
 
 ```xml
+conf/hive-site.xml 文件
 <configuration>
 	 <property>
         <name>javax.jdo.option.ConnectionUserName</name>
@@ -176,10 +177,119 @@ hive> exit;
 
 ```
 
+```java
+默认情况下,Hive元数据保存在内嵌的Derby数据库中,只能允许一个回话连接,只适合简单的测试。
+实际情况下生产环境中不使用,为了支持"多用户会话",则需要一个独立的元数据库,使用mysql作为元数据库,Hive内部对Mysql提供了很好的支持
+
+
+参数配置方式
+1) 查看当前所有的配置信息
+	hive> set;
+2) 参数的配置三种方式
+   a) 配置文件方式
+   		默认配置文件: hive-default.xml
+   		用户自定义配置文件: hive-site.xml
+   		注意,用户自定义配置会覆盖默认配置,另外hive也会读入hadoop的配置,因为hive是作为hadoop的客户端启动的,hive的配置会覆盖hadoop的配置
+   		配置文件的设定对本机启动的多有hive进行都有效。
+   b) 命令行参数方式
+   	  启动hive时,可以在命令行添加-hiveconf param=value来设定参数
+   	  bin/hive -hiveconf mapred.reduce.tasks=10; (仅对本次hive启动有效)
+      查看参数设置
+      hive> set mapred.reduce.tasks  
+   c) 参数声明方式
+      可以在HQL中使用set关键字设定参数
+      hive> set mapred.reduce.tasks=100; (仅对本次hive启动有效)
+      参看参数设置
+	  hive> set mapred.reduce.tasks;
+
+上述三种方式的优先级依次递增,即配置文件<命令行参数<参数声明。注意某些系统级参数,例如log4j相关的设定必须用前两种方式设定,因为那些参数的读取在会话建立之前已经完成了。 
+
 ```
-	默认情况下,Hive元数据保存在内嵌的Derby数据库中,只能允许一个回话连接,只适合简单的测试。
-实际情况下生产环境中不使用,为了支持多用户会话,则需要一个独立的元数据库,使用mysql作为元数据库,Hive内部对Mysql提供了很好的支持
+
+
+
+#### _hive的属性介绍_
+
+```xml
+Hive数据仓库位置配置
+    1) Default数据仓库的原始位置在hdfs上
+    2) 在仓库目录下,没有对默认的数据库default创建文件夹。如果某张表属于default数据库,直接在数据仓库目录下创建一个文件夹。
+    3) 修改default数据仓库原始位置(将hive-default.xml.template如下配置信息拷贝到hive-site.xml文件中)
+        <property>
+            <name>hive.metastore.warehouse.dir</name>
+            <value>/user/hive/warehouse</value>
+            <description>location of default database for the wirehouse</description>
+        </property>
+        配置同组用户有执行权限
+        bin/hdfs dfs -chmod g+w /usr/hive/warehouse
+
+查询后信息显示配置
+	1) 在hive-site.xml文件中添加如下配置信息,就可以实现显示当前数据库,以及查询表的头信息配置
+		<property>
+			<name>hive.cli.print.header</name>
+            <value>true</value>
+		</property>
+		<property>
+			<name>hive.cli.print.current.db</name>
+            <value>true</value>
+		</property>
+    2) 重启hive,对比配置前后差异
+		再次查询,会输出对应的字段名称
+
+
+
+hive运行日志信息配置(hive的启动和关闭日志,sql日志是mr程序的日志)
+	1) hive的log默认存放在/tmp/当前用户名/hive.log目录下
+    2) 修改hive的log存放日志到/opt/module/hive/logs
+    	a) 修改hive/conf/hive-log4j.properies.template文件名称为hive-log4j.properties
+        b) 修改hive-log4j.properties文件中log存在的位置
+			hive.log.dir=/opt/module/hive/logs
 ```
+
+
+
+
+
+
+
+
+
+
+
+#### _hive常用的交互命令_
+
+```sql
+1) -e 不进入hive交互窗口执行sql语句
+bin/hive -e "select id from student;"
+
+2) "-f" 执行脚本中的sql语句
+	在/opt/module/datas目录下创建hivef.sql文件
+	文件中写入正确sql语句
+	select * from student;
+	执行文件中的sql语句
+	bin/hive -f /opt/module/datas/hivef.sql > ssgao.txt   (将查询结果可以放到ssgao.txt文件中)
+
+交互命令的好处:
+  可以设置一个任务在指定的时间进行执行
+  
+hive 其他的命令操作
+  退出hive窗口
+  hive > exit;  // 先隐形的提交数据,再退出
+  hive > quit;  // 不提交数据,直接退出
+  
+hive cli 命令窗口中如何查看hdfs文件系统
+hive > dfs -ls / ; 
+
+hive cli 命令窗口中如何查看本地文件系统
+hive > ! ls /opt/module/datas ; ("!"不要省略 )
+
+查看hive中输入的所有的历史命令
+	1) 进入到当前用户的根目录/root或/home/ssgao
+	2) 查看.hivehistory文件
+	hive > cat .hivehistory
+```
+
+
 
 
 
@@ -393,6 +503,12 @@ select filter_ads['1231'][0],filter_ads['1231'][0].dsp_id, filter_ads['1231'][0]
  => {"dsp_id":"123","deal_id":"1231","material_id":"123","ad_filter_code":1231}	123	1231
  
 ```
+
+
+
+#### _类型转换_
+
+
 
 
 
